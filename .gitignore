@@ -1,0 +1,4 @@
+.env
+# Byte-compiled files
+__pycache__/
+Pipfile*

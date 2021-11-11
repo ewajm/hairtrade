@@ -1,35 +1,28 @@
 from sqlalchemy import *
-from datetime import datetime
+from .database import Base
 
-metadata_obj = MetaData()
+class BaseColumn(object):
+    id = Column(Integer, primary_key=True, index=True)
+    created = Column('created', DateTime(timezone=True), server_default=func.now())
+    updated = Column('updated', DateTime(timezone=True), server_default=func.now(), onupdate=func.current_timestamp())
 
-def mixin_factory():
-    return (Column("created_at", TIMESTAMP, default=datetime.utcnow, nullable=False),\
-        Column("updated_at", TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False))
+class Product(Base, BaseColumn):
+    __tablename__ = "products" 
 
-products = Table("products", 
-    metadata_obj,
-    Column("id", Integer, primary_key=True),
-    Column("product_name", Text, nullable=False,index=True),
-    Column("brand", Text, nullable=True),
-    Column("description", Text, nullable=True),
-    Column("type", Text, nullable=False, server_default="idk, a bottle"),
-    Column("what_do", Text, nullable=False, server_default="trade"),
-    Column("price", Numeric(10,2), nullable=True),
-    *mixin_factory()
-)
+    product_name = Column(Text, nullable=False,index=True),
+    brand = Column(Text, nullable=True),
+    description = Column(Text, nullable=True),
+    type = Column(Text, nullable=False, server_default="idk, a bottle"),
+    what_do = Column(Text, nullable=False, server_default="trade"),
+    price = Column(Numeric(10,2), nullable=True),
 
-users = Table("users", 
-    metadata_obj,
-    Column("id", Integer, primary_key=True),
-    Column("username", Text, unique=True, nullable=False, index=True),        
-    Column("email", Text, unique=True, nullable=False, index=True),
-    Column("email_verified", Boolean, nullable=False, server_default="False"),
-    Column("salt", Text, nullable=False),
-    Column("password", Text, nullable=False),
-    Column("is_active", Boolean(), nullable=False, server_default="True"),
-    Column("is_superuser", Boolean(), nullable=False, server_default="False"),  
-    *mixin_factory()
-)
-
+class User(Base, BaseColumn):
+    __tablename__ = "users"
+    username = Column(Text, unique=True, nullable=False, index=True),        
+    email = Column(Text, unique=True, nullable=False, index=True),
+    email_verified = Column(Boolean, nullable=False, server_default="False"),
+    salt = Column(Text, nullable=False),
+    password = Column(Text, nullable=False),
+    is_active = Column(Boolean(), nullable=False, server_default="True"),
+    is_superuser = Column(Boolean(), nullable=False, server_default="False"),  
 

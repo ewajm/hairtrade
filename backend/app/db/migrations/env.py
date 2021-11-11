@@ -13,7 +13,7 @@ import logging
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[3]))
 
 from app.core.config import DATABASE_URL, POSTGRES_DB  # noqa
-from app.db.metadata import metadata_obj
+from app.db.database import Base
 
 # Alembic Config object, which provides access to values within the .ini file
 config = alembic.context.config
@@ -21,7 +21,7 @@ config = alembic.context.config
 # Interpret the config file for logging
 fileConfig(config.config_file_name)
 logger = logging.getLogger("alembic.env")
-target_metadata = metadata_obj
+target_metadata = Base.metadata
 
 
 def run_migrations_online() -> None:

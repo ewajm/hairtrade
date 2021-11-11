@@ -4,33 +4,33 @@ from fastapi.exceptions import HTTPException
 from sqlalchemy.sql.sqltypes import Integer
 from starlette.status import HTTP_400_BAD_REQUEST
 from app.db.repositories.base import BaseRepository
-from app.models.product import ProductCreate, ProductUpdate, ProductInDB
+from app.models.product import ProductCreate, ProductUpdate, Product
 from app.db.metadata import products
 
 class ProductsRepository(BaseRepository):
 
-    async def create_product(self,*,new_product:ProductCreate) -> ProductInDB:
+    async def create_product(self,*,new_product:ProductCreate) -> Product:
         query = products.insert().values(new_product.dict()).returning(products.c.id, products.c.product_name, products.c.brand, products.c.description, 
         products.c.type, products.c.what_do, products.c.price)
         product = await self.db.fetch_one(query = query)
 
-        return ProductInDB(**product)
+        return Product(**product)
 
-    async def get_product_by_id(self, *, id:int) -> ProductInDB:
+    async def get_product_by_id(self, *, id:int) -> Product:
         query = products.select().where(products.c.id == id)
         product = await self.db.fetch_one(query = query)
         
         if not product:
             return None
 
-        return ProductInDB(**product)
+        return Product(**product)
         
-    async def get_all_products(self) -> List[ProductInDB]:
+    async def get_all_products(self) -> List[Product]:
         query = products.select()
         product_list = await self.db.fetch_all(query=query)
-        return [ProductInDB(**p) for p in product_list]
+        return [Product(**p) for p in product_list]
 
-    async def update_product(self, *, id:int, product_update:ProductUpdate) -> ProductInDB:
+    async def update_product(self, *, id:int, product_update:ProductUpdate) -> Product:
         target_product = await self.get_product_by_id(id=id)
         if not target_product:
             return None
@@ -50,7 +50,7 @@ class ProductsRepository(BaseRepository):
 
         try:
             product = await self.db.fetch_one(query = query)
-            return ProductInDB(**product)
+            return Product(**product)
         except Exception as e:
             print(e)
             raise HTTPException(

@@ -35,10 +35,13 @@ class ProductUpdate(ProductBase):
     what_do: Optional[WhatDo]
     type: Optional[ProductType]
 
-class ProductInDB(IDModelMixin,ProductBase):
+class Product(IDModelMixin,ProductBase):
     product_name: str
     type: ProductType
     what_do: WhatDo
+
+    class Config:
+        orm_mode = True
 
 class ProductPublic(IDModelMixin,ProductBase):
     pass

@@ -9,7 +9,7 @@ from starlette.status  import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_422_UNPROCES
 from app.models.product import ProductCreate
 from app.models.product import ProductType
 from app.models.product import WhatDo
-from app.models.product import ProductInDB
+from app.models.product import Product
 from tests.conftest import test_product  
 # decorate all tests with @pytest.mark.asyncio
 pytestmark = pytest.mark.asyncio  
@@ -69,11 +69,11 @@ class TestCreateProduct:
         
 class TestGetProduct:
     async def test_get_product_by_id(
-        self, app:FastAPI, client:AsyncClient, test_product:ProductInDB
+        self, app:FastAPI, client:AsyncClient, test_product:Product
     ) -> None:
         res = await client.get(app.url_path_for("products:get-product-by-id",id=test_product.id))
         assert res.status_code == HTTP_200_OK
-        product = ProductInDB(**res.json())
+        product = Product(**res.json())
         assert product == test_product
 
     @pytest.mark.parametrize(
@@ -91,13 +91,13 @@ class TestGetProduct:
         assert res.status_code == status_code
 
     async def test_get_all_products_returns_valid_response(
-        self, app: FastAPI, client: AsyncClient, test_product: ProductInDB
+        self, app: FastAPI, client: AsyncClient, test_product: Product
     ) -> None:
         res = await client.get(app.url_path_for("products:get-all-products"))
         assert res.status_code == HTTP_200_OK
         assert isinstance(res.json(), list)
         assert len(res.json()) > 0        
-        products = [ProductInDB(**l) for l in res.json()]
+        products = [Product(**l) for l in res.json()]
         assert test_product in products
 
 class TestUpdateProduct:
@@ -122,7 +122,7 @@ class TestUpdateProduct:
         self, 
         app: FastAPI, 
         client: AsyncClient, 
-        test_product: ProductInDB, 
+        test_product: Product, 
         attrs_to_change: List[str], 
         values: List[str],
     ) -> None:
@@ -139,7 +139,7 @@ class TestUpdateProduct:
             json=product_update
         )
         assert res.status_code == HTTP_200_OK
-        updated_product = ProductInDB(**res.json())
+        updated_product = Product(**res.json())
         assert updated_product.id == test_product.id  # make sure it's the same cleaning
         # make sure that any attribute we updated has changed to the correct value
         for i in range(len(attrs_to_change)):
@@ -184,7 +184,7 @@ class TestDeleteProduct:
         self,
         app: FastAPI,
         client: AsyncClient,
-        test_product: ProductInDB,
+        test_product: Product,
     ) -> None:
         # delete the cleaning
         res = await client.delete(

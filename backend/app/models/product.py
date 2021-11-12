@@ -43,5 +43,9 @@ class Product(IDModelMixin,ProductBase):
     class Config:
         orm_mode = True
 
-class ProductPublic(IDModelMixin,ProductBase):
-    pass
+class ProductPublic(Product):
+    type: ProductType
+    what_do: WhatDo
+
+    class Config:
+        orm_mod = True

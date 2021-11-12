@@ -13,7 +13,7 @@ import logging
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[3]))
 
 from app.core.config import DATABASE_URL, POSTGRES_DB  # noqa
-from app.db.database import Base
+from app.db.metadata import Base
 
 # Alembic Config object, which provides access to values within the .ini file
 config = alembic.context.config

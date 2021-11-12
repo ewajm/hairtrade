@@ -8,7 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 DB_URL = f"{DATABASE_URL}_test" if os.environ.get("TESTING") else DATABASE_URL
 
 engine = create_engine(
-    DB_URL, connect_args=(), pool_pre_ping=True
+    DB_URL,pool_pre_ping=True
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

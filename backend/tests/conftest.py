@@ -6,13 +6,14 @@ from asgi_lifespan import LifespanManager
 
 from fastapi import FastAPI
 from httpx import AsyncClient
-from databases import Database
 
 import alembic
 from alembic.config import Config
+from sqlalchemy.orm import session
 from app.db.repositories.products import ProductsRepository
 
 from app.models.product import ProductCreate, Product, ProductType, WhatDo
+from app.db.database import SessionLocal
 
 
 # Apply migrations at beginning and end of testing session
@@ -37,8 +38,12 @@ def app(apply_migrations: None) -> FastAPI:
 
 # Grab a reference to our database when needed
 @pytest.fixture
-def db(app: FastAPI) -> Database:
-    return app.state._db
+def db() -> session.Session:
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 # Make requests in our tests
@@ -53,7 +58,7 @@ async def client(app: FastAPI) -> AsyncClient:
             yield client
 
 @pytest.fixture
-async def test_product(db:Database) -> Product:
+async def test_product(db:session.Session) -> Product:
     product_repo = ProductsRepository(db)
     new_product = ProductCreate(
         product_name="fake_product",

@@ -4,31 +4,29 @@ from fastapi.exceptions import HTTPException
 from sqlalchemy.sql.sqltypes import Integer
 from starlette.status import HTTP_400_BAD_REQUEST
 from app.db.repositories.base import BaseRepository
-from app.models.product import ProductCreate, ProductUpdate, Product
+from app.models.product import ProductCreate, ProductUpdate, ProductInDB
 from app.db.metadata import Product
 from sqlalchemy.orm import Session
 
 class ProductsRepository(BaseRepository):
 
-    def create_product(self,new_product:ProductCreate) -> Product:
+    def create_product(self,new_product:ProductCreate):
         db_product = Product(**new_product.dict())
         self.db.add(db_product)
         self.db.commit()
         self.db.refresh(db_product)
         return db_product
 
-    # async def get_product_by_id(self, *, id:int) -> Product:
-    #     query = products.select().where(products.c.id == id)
-    #     product = await self.db.fetch_one(query = query)
+    async def get_product_by_id(self, *, id:int):
+        product = self.db.query(Product).filter(Product.id == id).first()
         
-    #     if not product:
-    #         return None
+        if not product:
+            return None
 
-    #     return Product(**product)
+        return product
         
     # async def get_all_products(self) -> List[Product]:
-    #     query = products.select()
-    #     product_list = await self.db.fetch_all(query=query)
+    #     product_list = await self.db
     #     return [Product(**p) for p in product_list]
 
     # async def update_product(self, *, id:int, product_update:ProductUpdate) -> Product:

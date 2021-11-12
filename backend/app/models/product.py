@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Optional
 from app.models.core import CoreModel
 from app.models.core import IDModelMixin
+from app.models.core import DateTimeModelMixin
 
 class ProductType(str,Enum):
     dunno = "idk, a bottle"
@@ -35,7 +36,7 @@ class ProductUpdate(ProductBase):
     what_do: Optional[WhatDo]
     type: Optional[ProductType]
 
-class Product(IDModelMixin,ProductBase):
+class ProductInDB(IDModelMixin,DateTimeModelMixin, ProductBase):
     product_name: str
     type: ProductType
     what_do: WhatDo
@@ -43,7 +44,7 @@ class Product(IDModelMixin,ProductBase):
     class Config:
         orm_mode = True
 
-class ProductPublic(Product):
+class ProductPublic(ProductInDB):
     type: ProductType
     what_do: WhatDo
 

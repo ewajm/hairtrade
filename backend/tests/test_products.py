@@ -1,4 +1,4 @@
-from functools import total_ordering
+
 from typing import List
 import pytest
 from httpx import AsyncClient
@@ -9,8 +9,8 @@ from starlette.status  import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_422_UNPROCES
 from app.models.product import ProductCreate
 from app.models.product import ProductType
 from app.models.product import WhatDo
-from app.models.product import Product
-from tests.conftest import test_product  
+from app.models.product import ProductPublic
+from app.db.metadata import Product  
 # decorate all tests with @pytest.mark.asyncio
 pytestmark = pytest.mark.asyncio  
 
@@ -67,28 +67,28 @@ class TestCreateProduct:
         )
         assert res.status_code == status_code
         
-# class TestGetProduct:
-#     async def test_get_product_by_id(
-#         self, app:FastAPI, client:AsyncClient, test_product:Product
-#     ) -> None:
-#         res = await client.get(app.url_path_for("products:get-product-by-id",id=test_product.id))
-#         assert res.status_code == HTTP_200_OK
-#         product = Product(**res.json())
-#         assert product == test_product
+class TestGetProduct:
+    async def test_get_product_by_id(
+        self, app:FastAPI, client:AsyncClient, test_product:Product
+    ) -> None:
+        res = await client.get(app.url_path_for("products:get-product-by-id",id=test_product.id))
+        assert res.status_code == HTTP_200_OK
+        product = ProductPublic(**res.json())
+        assert product == ProductPublic(**test_product.as_dict())
 
-#     @pytest.mark.parametrize(
-#         "id, status_code",
-#         (
-#             (999,404),
-#             (-1, 404),
-#             (None, 422),
-#         )
-#     )
-#     async def test_wrong_id_returns_error(
-#         self, app:FastAPI, client:AsyncClient, id:int, status_code:int
-#     ) -> None:
-#         res = await client.get(app.url_path_for("products:get-product-by-id",id=id))
-#         assert res.status_code == status_code
+    @pytest.mark.parametrize(
+        "id, status_code",
+        (
+            (999,404),
+            (-1, 404),
+            (None, 422),
+        )
+    )
+    async def test_wrong_id_returns_error(
+        self, app:FastAPI, client:AsyncClient, id:int, status_code:int
+    ) -> None:
+        res = await client.get(app.url_path_for("products:get-product-by-id",id=id))
+        assert res.status_code == status_code
 
 #     async def test_get_all_products_returns_valid_response(
 #         self, app: FastAPI, client: AsyncClient, test_product: Product

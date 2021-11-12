@@ -11,6 +11,9 @@ class BaseColumn(object):
     created_at = Column('created_at', TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column('updated_at', TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.current_timestamp())
 
+    def as_dict(self):
+       return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
 class Product(BaseColumn, Base):
     product_name = Column(Text, nullable=False,index=True)
     brand = Column(Text, nullable=True)

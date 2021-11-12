@@ -12,7 +12,7 @@ from alembic.config import Config
 from sqlalchemy.orm import session
 from app.db.repositories.products import ProductsRepository
 
-from app.models.product import ProductCreate, Product, ProductType, WhatDo
+from app.models.product import ProductCreate, ProductType, WhatDo
 from app.db.database import SessionLocal
 
 
@@ -58,7 +58,7 @@ async def client(app: FastAPI) -> AsyncClient:
             yield client
 
 @pytest.fixture
-async def test_product(db:session.Session) -> Product:
+async def test_product(db:session.Session):
     product_repo = ProductsRepository(db)
     new_product = ProductCreate(
         product_name="fake_product",
@@ -68,5 +68,4 @@ async def test_product(db:session.Session) -> Product:
         what_do=WhatDo.sell,
         price=9.99
     )
-
-    return await product_repo.create_product(new_product=new_product)
+    return product_repo.create_product(new_product=new_product)

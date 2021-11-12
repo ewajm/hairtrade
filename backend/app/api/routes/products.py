@@ -18,17 +18,17 @@ router = APIRouter()
 #     all_products = await product_repo.get_all_products()
 #     return all_products
 
-# @router.get("/{id}/", response_model=ProductPublic, name="products:get-product-by-id")
-# async def get_product_by_id(
-#     id:int,
-#     product_repo: ProductsRepository = Depends(get_repository(ProductsRepository)),
-# ) -> ProductPublic:
-#     product = await product_repo.get_product_by_id(id=id)
+@router.get("/{id}/", response_model=ProductPublic, name="products:get-product-by-id")
+async def get_product_by_id(
+    id:int,
+    product_repo: ProductsRepository = Depends(get_repository(ProductsRepository)),
+) -> ProductPublic:
+    product = await product_repo.get_product_by_id(id=id)
 
-#     if not product:
-#         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="no product found with that id.")
+    if not product:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="no product found with that id.")
 
-#     return product
+    return product
 
 @router.post("/", response_model=ProductPublic, name="products:create-product", status_code=HTTP_201_CREATED)
 def create_new_product(

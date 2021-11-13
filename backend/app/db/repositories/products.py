@@ -17,7 +17,7 @@ class ProductsRepository(BaseRepository):
         self.db.refresh(db_product)
         return db_product
 
-    async def get_product_by_id(self, *, id:int):
+    def get_product_by_id(self, *, id:int):
         product = self.db.query(Product).filter(Product.id == id).first()
         
         if not product:
@@ -25,9 +25,8 @@ class ProductsRepository(BaseRepository):
 
         return product
         
-    # async def get_all_products(self) -> List[Product]:
-    #     product_list = await self.db
-    #     return [Product(**p) for p in product_list]
+    def get_all_products(self):
+        return self.db.query(Product).all()
 
     # async def update_product(self, *, id:int, product_update:ProductUpdate) -> Product:
     #     target_product = await self.get_product_by_id(id=id)

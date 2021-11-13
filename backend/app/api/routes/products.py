@@ -11,19 +11,19 @@ from app.models.product import ProductUpdate
 
 router = APIRouter()
 
-# @router.get("/", response_model=List[ProductPublic], name="products:get-all-products")
-# async def get_all_products(
-#     product_repo: ProductsRepository = Depends(get_repository(ProductsRepository)),
-# ) -> List[ProductPublic]:
-#     all_products = await product_repo.get_all_products()
-#     return all_products
+@router.get("/", response_model=List[ProductPublic], name="products:get-all-products")
+def get_all_products(
+    product_repo: ProductsRepository = Depends(get_repository(ProductsRepository)),
+) -> List[ProductPublic]:
+    all_products = product_repo.get_all_products()
+    return all_products
 
 @router.get("/{id}/", response_model=ProductPublic, name="products:get-product-by-id")
-async def get_product_by_id(
+def get_product_by_id(
     id:int,
     product_repo: ProductsRepository = Depends(get_repository(ProductsRepository)),
 ) -> ProductPublic:
-    product = await product_repo.get_product_by_id(id=id)
+    product = product_repo.get_product_by_id(id=id)
 
     if not product:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="no product found with that id.")

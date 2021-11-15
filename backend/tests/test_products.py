@@ -100,126 +100,128 @@ class TestGetProduct:
         products = [ProductPublic(**l) for l in res.json()]
         assert ProductPublic(**test_product.as_dict()) in products
 
-# class TestUpdateProduct:
-#     @pytest.mark.parametrize(
-#         "attrs_to_change, values",
-#         (
-#             (["product_name"], ["new fake product name"]),
-#             (["description"], ["new fake product description"]),
-#             (["price"], [3.14]),
-#             (["type"], ["gel"]),            
-#             (
-#                 ["product_name", "brand"], 
-#                 [
-#                     "extra new fake product name", 
-#                     "extra new fake product brand",
-#                 ],
-#             ),
-#             (["what_do", "type"], ["give away", "oil"]),
-#         ),
-#     )
-#     async def test_update_product_with_valid_input(
-#         self, 
-#         app: FastAPI, 
-#         client: AsyncClient, 
-#         test_product: Product, 
-#         attrs_to_change: List[str], 
-#         values: List[str],
-#     ) -> None:
-#         product_update = {
-#             "product_update": {
-#                 attrs_to_change[i]: values[i] for i in range(len(attrs_to_change))
-#             }
-#         }
-#         res = await client.put(
-#             app.url_path_for(
-#                 "products:update-product-by-id",
-#                 id=test_product.id,
-#             ),
-#             json=product_update
-#         )
-#         assert res.status_code == HTTP_200_OK
-#         updated_product = Product(**res.json())
-#         assert updated_product.id == test_product.id  # make sure it's the same cleaning
-#         # make sure that any attribute we updated has changed to the correct value
-#         for i in range(len(attrs_to_change)):
-#             attr_to_change = getattr(updated_product, attrs_to_change[i])
-#             assert attr_to_change != getattr(test_product, attrs_to_change[i])
-#             assert attr_to_change == values[i] 
-#         # make sure that no other attributes' values have changed
-#         for attr, value in updated_product.dict().items():
-#             if attr not in attrs_to_change:
-#                 assert getattr(test_product, attr) == value
+class TestUpdateProduct:
+    @pytest.mark.parametrize(
+        "attrs_to_change, values",
+        (
+            (["product_name"], ["new fake product name"]),
+            (["description"], ["new fake product description"]),
+            (["price"], [3.14]),
+            (["type"], ["gel"]),            
+            (
+                ["product_name", "brand"], 
+                [
+                    "extra new fake product name", 
+                    "extra new fake product brand",
+                ],
+            ),
+            (["what_do", "type"], ["give away", "oil"]),
+        ),
+    )
+    async def test_update_product_with_valid_input(
+        self, 
+        app: FastAPI, 
+        client: AsyncClient, 
+        test_product: Product, 
+        attrs_to_change: List[str], 
+        values: List[str],
+    ) -> None:
+        product_update = {
+            "product_update": {
+                attrs_to_change[i]: values[i] for i in range(len(attrs_to_change))
+            }
+        }
+        res = await client.put(
+            app.url_path_for(
+                "products:update-product-by-id",
+                id=test_product.id,
+            ),
+            json=product_update
+        )
+        assert res.status_code == HTTP_200_OK
+        updated_product = ProductPublic(**res.json())
+        assert updated_product.id == test_product.id  # make sure it's the same cleaning
+        # make sure that any attribute we updated has changed to the correct value
+        for i in range(len(attrs_to_change)):
+            attr_to_change = getattr(updated_product, attrs_to_change[i])
+            assert attr_to_change != getattr(test_product, attrs_to_change[i])
+            assert attr_to_change == values[i] 
+        # make sure that no other attributes' values have changed
+        test_product_obj = ProductPublic(**test_product.as_dict())
+        for attr, value in updated_product.dict().items():
+            if attr not in attrs_to_change and attr != "updated_at":
+                print(attr)
+                assert getattr(test_product_obj, attr) == value
 
-#     @pytest.mark.parametrize(
-#         "id, payload, status_code",
-#         (
-#             (-1, {"product_name": "test"}, 422),
-#             (0, {"product_name": "test2"}, 422),
-#             (500, {"product_name": "test3"}, 404),
-#             (1, None, 422),
-#             (1, {"type": "invalid product type"}, 422),
-#             (1, {"type": None}, 400),
-#             (1, {"what_do": "invalid what_do type"}, 422),
-#             (1, {"what_do": None}, 400),
-#         ),
-#     )
-#     async def test_update_cleaning_with_invalid_input_throws_error(
-#         self,
-#         app: FastAPI,
-#         client: AsyncClient,
-#         id: int,
-#         payload: dict,
-#         status_code: int,
-#     ) -> None:
-#         product_update = {"product_update": payload}
-#         res = await client.put(
-#             app.url_path_for("products:update-product-by-id", id=id),
-#             json=product_update
-#         )
-#         assert res.status_code == status_code
+    @pytest.mark.parametrize(
+        "id, payload, status_code",
+        (
+            (-1, {"product_name": "test"}, 422),
+            (0, {"product_name": "test2"}, 422),
+            (500, {"product_name": "test3"}, 404),
+            (1, None, 422),
+            (1, {"type": "invalid product type"}, 422),
+            (1, {"type": None}, 400),
+            (1, {"what_do": "invalid what_do type"}, 422),
+            (1, {"what_do": None}, 400),
+        ),
+    )
+    async def test_update_cleaning_with_invalid_input_throws_error(
+        self,
+        app: FastAPI,
+        client: AsyncClient,
+        id: int,
+        payload: dict,
+        status_code: int,
+    ) -> None:
+        product_update = {"product_update": payload}
+        res = await client.put(
+            app.url_path_for("products:update-product-by-id", id=id),
+            json=product_update
+        )
+        assert res.status_code == status_code
 
-# class TestDeleteProduct:
-#     async def test_can_delete_product_successfully(
-#         self,
-#         app: FastAPI,
-#         client: AsyncClient,
-#         test_product: Product,
-#     ) -> None:
-#         # delete the cleaning
-#         res = await client.delete(
-#             app.url_path_for(
-#                 "products:delete-product-by-id", 
-#                 id=test_product.id,
-#             ),
-#         )
-#         assert res.status_code == HTTP_200_OK
-#         # ensure that the cleaning no longer exists
-#         res = await client.get(
-#             app.url_path_for(
-#                 "products:get-product-by-id", 
-#                 id=test_product.id,
-#             ),
-#         )
-#         assert res.status_code == HTTP_404_NOT_FOUND
+class TestDeleteProduct:
+    async def test_can_delete_product_successfully(
+        self,
+        app: FastAPI,
+        client: AsyncClient,
+        test_product: Product,
+    ) -> None:
+        # delete the cleaning
+        res = await client.delete(
+            app.url_path_for(
+                "products:delete-product-by-id", 
+                id=test_product.id,
+            ),
+        )
+        assert res.status_code == HTTP_200_OK
+        # ensure that the cleaning no longer exists
+        res = await client.get(
+            app.url_path_for(
+                "products:get-product-by-id", 
+                id=test_product.id,
+            ),
+        )
+        assert res.status_code == HTTP_404_NOT_FOUND
 
-#     @pytest.mark.parametrize(
-#         "id, status_code",
-#         (
-#             (500, 404),
-#             (0, 422),
-#             (-1, 422),
-#             (None, 422),
-#         ),
-#     )
-#     async def test_delete_cleaning_with_invalid_input_throws_error(
-#         self,
-#         app: FastAPI,
-#         client: AsyncClient,
-#         id: int,
-#         status_code: int,
-#     ) -> None:
-#         res = await client.delete(
-#             app.url_path_for("products:delete-product-by-id", id=id),
-#         )
-#         assert res.status_code == status_code  
+    @pytest.mark.parametrize(
+        "id, status_code",
+        (
+            (500, 404),
+            (0, 422),
+            (-1, 422),
+            (None, 422),
+        ),
+    )
+    async def test_delete_cleaning_with_invalid_input_throws_error(
+        self,
+        app: FastAPI,
+        client: AsyncClient,
+        id: int,
+        status_code: int,
+    ) -> None:
+        res = await client.delete(
+            app.url_path_for("products:delete-product-by-id", id=id),
+        )
+        assert res.status_code == status_code  

@@ -1,5 +1,6 @@
 from typing import List
 from fastapi.exceptions import HTTPException
+from sqlalchemy.sql.elements import False_
 
 from sqlalchemy.sql.sqltypes import Integer
 from starlette.status import HTTP_400_BAD_REQUEST
@@ -28,41 +29,45 @@ class ProductsRepository(BaseRepository):
     def get_all_products(self):
         return self.db.query(Product).all()
 
-    # async def update_product(self, *, id:int, product_update:ProductUpdate) -> Product:
-    #     target_product = await self.get_product_by_id(id=id)
-    #     if not target_product:
-    #         return None
+    def update_product(self, *, id:int, product_update:ProductUpdate):
+        target_product = self.get_product_by_id(id=id)
+        if not target_product:
+            return None
 
-    #     product_update_params = target_product.copy(
-    #         update=product_update.dict(exclude_unset=True),
-    #     )
+        update_performed = False
 
-    #     if product_update_params.type is None or product_update_params.what_do is None:
-    #         raise HTTPException(
-    #             status_code=HTTP_400_BAD_REQUEST, 
-    #             detail="Invalid cleaning type. Cannot be None.",
-    #         )
-
-    #     query = products.update().where(products.c.id == id).values(product_update_params.dict()).\
-    #         returning(products.c.id, products.c.product_name, products.c.brand, products.c.description, products.c.type, products.c.what_do, products.c.price)
-
-    #     try:
-    #         product = await self.db.fetch_one(query = query)
-    #         return Product(**product)
-    #     except Exception as e:
-    #         print(e)
-    #         raise HTTPException(
-    #             status_code=HTTP_400_BAD_REQUEST, 
-    #             detail="Invalid update params.",                
-    #         )
-
-    # async def delete_product_by_id(self, *, id:int) -> int:
-    #     target_product = await self.get_product_by_id(id=id)
-    #     if not target_product:
-    #         return None
+        for var,value in vars(product_update).items():
+            print(str(var) + str(value))
+            if value or str(value) == 'False':
+                setattr(target_product, var, value)
+                update_performed = True 
         
-    #     query = products.delete().where(products.c.id==id).returning(products.c.id)
+        
+        if update_performed == False:
+            raise HTTPException(
+                status_code=HTTP_400_BAD_REQUEST, 
+                detail="No valid update parameters. No update performed",
+            )
 
-    #     deleted_id = await self.db.execute(query = query)
+        try:
+            self.db.add(target_product)
+            self.db.commit()
+            self.db.refresh(target_product)
+            return target_product
+        except Exception as e:
+            print(e)
+            raise HTTPException(
+                status_code=HTTP_400_BAD_REQUEST, 
+                detail="Invalid update params.",                
+            )
 
-    #     return deleted_id
+    def delete_product_by_id(self, *, id:int) -> int:
+        target_product = self.get_product_by_id(id=id)
+        if not target_product:
+            return None
+
+        deleted_id = target_product.id
+        self.db.delete(target_product)
+        self.db.commit()
+
+        return deleted_id

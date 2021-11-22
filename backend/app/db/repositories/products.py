@@ -1,13 +1,10 @@
 from typing import List
 from fastapi.exceptions import HTTPException
-from sqlalchemy.sql.elements import False_
 
-from sqlalchemy.sql.sqltypes import Integer
 from starlette.status import HTTP_400_BAD_REQUEST
 from app.db.repositories.base import BaseRepository
-from app.models.product import ProductCreate, ProductUpdate, ProductInDB
+from app.models.product import ProductCreate, ProductUpdate
 from app.db.metadata import Product
-from sqlalchemy.orm import Session
 
 class ProductsRepository(BaseRepository):
 

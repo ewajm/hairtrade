@@ -10,8 +10,14 @@ from httpx import AsyncClient
 import alembic
 from alembic.config import Config
 from sqlalchemy.orm import session
-from app.db.repositories.products import ProductsRepository
 
+from app.core.config import DATABASE_URL
+from app import settings
+
+settings.init()
+settings.db_url = f"{DATABASE_URL}_test"
+
+from app.db.repositories.products import ProductsRepository
 from app.models.product import ProductCreate, ProductType, WhatDo
 from app.db.database import SessionLocal
 

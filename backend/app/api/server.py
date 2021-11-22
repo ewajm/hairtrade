@@ -1,5 +1,14 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app import settings
+from app.core.config import DATABASE_URL
+from app.core.config import DATABASE_URL
+try:
+    settings.db_url
+except AttributeError:
+    settings.init()
+    settings.db_url = DATABASE_URL
 
 
 from app.core import config  

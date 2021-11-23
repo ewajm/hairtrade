@@ -34,7 +34,6 @@ class ProductsRepository(BaseRepository):
         update_performed = False
 
         for var,value in vars(product_update).items():
-            print(str(var) + str(value))
             if value or str(value) == 'False':
                 setattr(target_product, var, value)
                 update_performed = True 

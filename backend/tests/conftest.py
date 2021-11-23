@@ -1,5 +1,6 @@
 import warnings
 import os
+import time
 
 import pytest
 from asgi_lifespan import LifespanManager
@@ -10,6 +11,7 @@ from httpx import AsyncClient
 import alembic
 from alembic.config import Config
 from sqlalchemy.orm import session
+from sqlalchemy.orm import close_all_sessions
 
 from app.core.config import DATABASE_URL
 from app import settings
@@ -20,6 +22,7 @@ settings.db_url = f"{DATABASE_URL}_test"
 from app.db.repositories.products import ProductsRepository
 from app.models.product import ProductCreate, ProductType, WhatDo
 from app.db.database import SessionLocal
+from app.db.database import engine
 
 
 # Apply migrations at beginning and end of testing session
@@ -28,9 +31,10 @@ def apply_migrations():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
     os.environ["TESTING"] = "1"
     config = Config("alembic.ini")
-
     alembic.command.upgrade(config, "head")
     yield
+    close_all_sessions()
+    engine.dispose()
     alembic.command.downgrade(config, "base")
 
 

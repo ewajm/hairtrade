@@ -13,7 +13,7 @@ from starlette.status import (
     HTTP_422_UNPROCESSABLE_ENTITY,
 )
 
-from app.models.user import UserCreate, UserInDB
+from app.models.user import UserCreate, UserInDB,UserPublic
 from app.db.repositories.users import UsersRepository
 
 
@@ -46,5 +46,29 @@ class TestUserRegistration:
         assert user_in_db.email == new_user["email"]
         assert user_in_db.username == new_user["username"]
         # check that the user returned in the response is equal to the user in the database
-        created_user = UserInDB(**res.json(), password="whatever", salt="123").dict(exclude={"password", "salt"})
-        assert created_user == user_in_db.dict(exclude={"password", "salt"})
+        created_user = UserPublic(**res.json()).dict()
+        assert created_user == UserPublic(**user_in_db.as_dict()).dict()
+
+    @pytest.mark.parametrize(
+        "attr, value, status_code",
+        (
+            ("email", "shakira@shakira.io", 400),            
+            ("username", "shakirashakira", 400),
+            ("email", "invalid_email@one@two.io", 422),
+            ("password", "short", 422),
+            ("username", "shakira@#$%^<>", 422),
+            ("username", "ab", 422),
+        )
+    )
+    async def test_user_registration_fails_when_credentials_are_taken(
+        self, 
+        app: FastAPI, 
+        client: AsyncClient,
+        attr: str,
+        value: str,
+        status_code: int,
+    ) -> None: 
+        new_user = {"email": "nottaken@email.io", "username": "not_taken_username", "password": "freepassword"}
+        new_user[attr] = value
+        res = await client.post(app.url_path_for("users:register-new-user"), json={"new_user": new_user})
+        assert res.status_code == status_code

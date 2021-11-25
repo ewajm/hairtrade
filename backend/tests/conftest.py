@@ -13,13 +13,16 @@ from alembic.config import Config
 from sqlalchemy.orm import session
 from sqlalchemy.orm import close_all_sessions
 
-from app.core.config import DATABASE_URL
+from app.core.config import DATABASE_URL, SECRET_KEY, JWT_TOKEN_PREFIX
+from app.services import auth_service
 from app import settings
+from app.models.user import UserCreate, UserInDB
 
 settings.init()
 settings.db_url = f"{DATABASE_URL}_test"
 
 from app.db.repositories.products import ProductsRepository
+from app.db.repositories.users import UsersRepository
 from app.models.product import ProductCreate, ProductType, WhatDo
 from app.db.database import SessionLocal
 from app.db.database import engine
@@ -79,3 +82,25 @@ async def test_product(db:session.Session):
         price=9.99
     )
     return product_repo.create_product(new_product=new_product)
+
+@pytest.fixture
+async def test_user(db: session.Session) -> UserInDB:
+    new_user = UserCreate(
+        email="lebron@james.io",
+        username="lebronjames",
+        password="heatcavslakers",
+    )
+    user_repo = UsersRepository(db)
+    existing_user = user_repo.get_user_by_email(email=new_user.email)
+    if existing_user:
+        return UserInDB(**existing_user.as_dict())
+    return user_repo.register_new_user(new_user=new_user)
+
+@pytest.fixture
+def authorized_client(client: AsyncClient, test_user: UserInDB) -> AsyncClient:
+    access_token = auth_service.create_access_token_for_user(user=test_user, secret_key=str(SECRET_KEY))
+    client.headers = {
+        **client.headers,
+        "Authorization": f"{JWT_TOKEN_PREFIX} {access_token}",
+    }
+    return client

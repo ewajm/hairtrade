@@ -150,7 +150,6 @@ class TestUpdateProduct:
         test_product_obj = ProductPublic(**test_product.as_dict())
         for attr, value in updated_product.dict().items():
             if attr not in attrs_to_change and attr != "updated_at":
-                print(attr)
                 assert getattr(test_product_obj, attr) == value
 
     @pytest.mark.parametrize(

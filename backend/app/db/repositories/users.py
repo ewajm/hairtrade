@@ -1,19 +1,26 @@
+from typing import Optional
 from fastapi.exceptions import HTTPException
 from pydantic.networks import EmailStr
-from sqlalchemy.sql.functions import user
+from sqlalchemy.orm.session import Session
 from starlette import status
 from app.db.repositories.base import BaseRepository
 from app.models.user import UserCreate, UserUpdate, UserInDB
 from app.db.metadata import User
+from app.services import auth_service
 
 class UsersRepository(BaseRepository):
-    def get_user_by_email(self, *, email: EmailStr) -> UserInDB:
+
+    def __init__(self, db: Session) -> None:
+        super().__init__(db)
+        self.auth_service = auth_service
+
+    def get_user_by_email(self, *, email: EmailStr):
         user_record = self.db.query(User).filter(User.email == email).first()
         if not user_record:
             return None
         return user_record
         
-    def get_user_by_username(self, *, username: str) -> UserInDB:
+    def get_user_by_username(self, *, username: str):
         user_record = self.db.query(User).filter(User.username == username).first()
         if not user_record:
             return None
@@ -32,10 +39,22 @@ class UsersRepository(BaseRepository):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="That username is already taken. Please try another one."                
             )
-        created_user = User(**dict(new_user.dict(),**{"salt": "123"}))
+
+        user_password_update = self.auth_service.create_salt_and_hashed_password(plaintext_password=new_user.password)
+        created_user = User(**dict(new_user.dict(),**user_password_update.dict()))
         self.db.add(created_user)
         self.db.commit()
         self.db.refresh(created_user)
-        return created_user
+        return UserInDB(**created_user.as_dict())
 
-
+    def authenticate_user(self, *, email: EmailStr, password: str) -> Optional[UserInDB]:
+        # make user user exists in db
+        user = self.get_user_by_email(email=email)
+        print(str(user))
+        if not user:
+            return None
+        # if submitted password doesn't match
+        if not self.auth_service.verify_password(password=password, salt=user.salt, hashed_pw=user.password):
+            print("pword bad")
+            return None
+        return UserInDB(**user.as_dict())

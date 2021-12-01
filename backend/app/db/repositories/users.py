@@ -4,6 +4,8 @@ from pydantic.networks import EmailStr
 from sqlalchemy.orm.session import Session
 from starlette import status
 from app.db.repositories.base import BaseRepository
+from app.db.repositories.profiles import ProfilesRepository
+from app.models.profile import ProfileCreate
 from app.models.user import UserCreate, UserUpdate, UserInDB
 from app.db.metadata import User
 from app.services import auth_service
@@ -13,6 +15,7 @@ class UsersRepository(BaseRepository):
     def __init__(self, db: Session) -> None:
         super().__init__(db)
         self.auth_service = auth_service
+        self.profiles_repo = ProfilesRepository(db)  
 
     def get_user_by_email(self, *, email: EmailStr):
         user_record = self.db.query(User).filter(User.email == email).first()
@@ -40,11 +43,15 @@ class UsersRepository(BaseRepository):
                 detail="That username is already taken. Please try another one."                
             )
 
+        
         user_password_update = self.auth_service.create_salt_and_hashed_password(plaintext_password=new_user.password)
         created_user = User(**dict(new_user.dict(),**user_password_update.dict()))
         self.db.add(created_user)
         self.db.commit()
         self.db.refresh(created_user)
+
+        self.profiles_repo.create_profile_for_user(profile_create=ProfileCreate(user_id=created_user.id))
+
         return UserInDB(**created_user.as_dict())
 
     def authenticate_user(self, *, email: EmailStr, password: str) -> Optional[UserInDB]:
@@ -55,6 +62,5 @@ class UsersRepository(BaseRepository):
             return None
         # if submitted password doesn't match
         if not self.auth_service.verify_password(password=password, salt=user.salt, hashed_pw=user.password):
-            print("pword bad")
             return None
         return UserInDB(**user.as_dict())

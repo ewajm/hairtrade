@@ -4,6 +4,9 @@ from sqlalchemy.orm import session
 
 from app.db.repositories.base import BaseRepository
 from app.db.database import SessionLocal
+from app import settings
+
+print(settings.db_url)
 
 def get_db():
     db = SessionLocal()

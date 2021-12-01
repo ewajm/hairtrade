@@ -1,5 +1,6 @@
 from sqlalchemy import *
 from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy.orm import relationship
 from .database import Base
 
 class BaseColumn(object):
@@ -30,4 +31,17 @@ class User(BaseColumn, Base):
     password = Column(Text, nullable=False)
     is_active = Column(Boolean(), nullable=False, server_default="True")
     is_superuser = Column(Boolean(), nullable=False, server_default="False") 
+    profile = relationship(
+        "Profile", back_populates="user",
+        cascade="all, delete",
+        passive_deletes=True,
+    )
 
+class Profile(BaseColumn, Base):
+    id = Column(Integer, primary_key=True)
+    full_name = Column(Text, nullable=True)
+    phone_number = Column(Text, nullable=True)
+    bio =  Column(Text, nullable=True, server_default=" ")
+    image =  Column(Text, nullable=True)
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
+    user = relationship("User", back_populates="profile")

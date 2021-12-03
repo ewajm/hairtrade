@@ -24,7 +24,7 @@ def get_user_from_token(
     except Exception as e:
         raise e
 
-    return UserInDB(**user.as_dict())
+    return user
 
 
 def get_current_active_user(current_user: UserInDB = Depends(get_user_from_token)) -> Optional[UserInDB]:

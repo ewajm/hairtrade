@@ -55,8 +55,8 @@ class TestUserRegistration:
         assert user_in_db.email == new_user["email"]
         assert user_in_db.username == new_user["username"]
         # check that the user returned in the response is equal to the user in the database
-        created_user = UserPublic(**res.json()).dict(exclude={"access_token"})
-        assert created_user == UserPublic(**user_in_db.as_dict()).dict(exclude={"access_token"})
+        created_user = UserPublic(**res.json()).dict(exclude={"access_token", "profile"})
+        assert created_user == user_in_db.dict(exclude={"password", "salt"})
 
     @pytest.mark.parametrize(
         "attr, value, status_code",

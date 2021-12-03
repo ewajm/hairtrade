@@ -93,7 +93,7 @@ async def test_user(db: session.Session) -> UserInDB:
     user_repo = UsersRepository(db)
     existing_user = user_repo.get_user_by_email(email=new_user.email)
     if existing_user:
-        return UserInDB(**existing_user.as_dict())
+        return existing_user
     return user_repo.register_new_user(new_user=new_user)
 
 @pytest.fixture
@@ -115,5 +115,5 @@ async def test_user2(db: session.Session) -> UserInDB:
     user_repo = UsersRepository(db)
     existing_user = user_repo.get_user_by_email(email=new_user.email)
     if existing_user:
-        return UserInDB(**existing_user.as_dict())
+        return existing_user
     return user_repo.register_new_user(new_user=new_user)

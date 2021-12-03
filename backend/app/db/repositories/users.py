@@ -21,13 +21,13 @@ class UsersRepository(BaseRepository):
         user_record = self.db.query(User).filter(User.email == email).first()
         if not user_record:
             return None
-        return user_record
+        return UserInDB(**user_record.as_dict())
         
     def get_user_by_username(self, *, username: str):
         user_record = self.db.query(User).filter(User.username == username).first()
         if not user_record:
             return None
-        return user_record
+        return UserInDB(**user_record.as_dict())
         
     def register_new_user(self, *, new_user: UserCreate) -> UserInDB:
         # make sure email isn't already taken
@@ -63,4 +63,4 @@ class UsersRepository(BaseRepository):
         # if submitted password doesn't match
         if not self.auth_service.verify_password(password=password, salt=user.salt, hashed_pw=user.password):
             return None
-        return UserInDB(**user.as_dict())
+        return user

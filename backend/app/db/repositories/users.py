@@ -5,8 +5,8 @@ from sqlalchemy.orm.session import Session
 from starlette import status
 from app.db.repositories.base import BaseRepository
 from app.db.repositories.profiles import ProfilesRepository
-from app.models.profile import ProfileCreate
-from app.models.user import UserCreate, UserUpdate, UserInDB
+from app.models.profile import ProfileCreate, ProfilePublic
+from app.models.user import UserCreate, UserPublic, UserUpdate, UserInDB
 from app.db.metadata import User
 from app.services import auth_service
 
@@ -17,16 +17,20 @@ class UsersRepository(BaseRepository):
         self.auth_service = auth_service
         self.profiles_repo = ProfilesRepository(db)  
 
-    def get_user_by_email(self, *, email: EmailStr):
+    def get_user_by_email(self, *, email: EmailStr, populate: bool = True) -> UserInDB:
         user_record = self.db.query(User).filter(User.email == email).first()
         if not user_record:
             return None
+        if populate:
+            return self.populate_user(user=user_record)
         return UserInDB(**user_record.as_dict())
         
-    def get_user_by_username(self, *, username: str):
+    def get_user_by_username(self, *, username: str, populate: bool = True) -> UserInDB:
         user_record = self.db.query(User).filter(User.username == username).first()
         if not user_record:
             return None
+        if populate:
+            return self.populate_user(user=user_record)
         return UserInDB(**user_record.as_dict())
         
     def register_new_user(self, *, new_user: UserCreate) -> UserInDB:
@@ -52,11 +56,11 @@ class UsersRepository(BaseRepository):
 
         self.profiles_repo.create_profile_for_user(profile_create=ProfileCreate(user_id=created_user.id))
 
-        return UserInDB(**created_user.as_dict())
+        return self.populate_user(user = created_user)
 
     def authenticate_user(self, *, email: EmailStr, password: str) -> Optional[UserInDB]:
         # make user user exists in db
-        user = self.get_user_by_email(email=email)
+        user = self.get_user_by_email(email=email, populate=False)
         print(str(user))
         if not user:
             return None
@@ -64,3 +68,12 @@ class UsersRepository(BaseRepository):
         if not self.auth_service.verify_password(password=password, salt=user.salt, hashed_pw=user.password):
             return None
         return user
+
+    def populate_user(self, *, user: User) -> UserInDB:
+        return UserPublic(
+            # unpack the user in db dict into the UserPublic model
+            # which will remove "password" and "salt"
+            **user.as_dict(),
+            # fetch the user's profile from the profiles repo
+            profile=ProfilePublic(**user.profile.as_dict())
+        )

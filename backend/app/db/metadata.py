@@ -33,6 +33,7 @@ class User(BaseColumn, Base):
     is_superuser = Column(Boolean(), nullable=False, server_default="False") 
     profile = relationship(
         "Profile", back_populates="user",
+        uselist=False,
         cascade="all, delete",
         passive_deletes=True,
     )

@@ -32,8 +32,8 @@ def register_new_user(
         access_token = auth_service.create_access_token_for_user(user=created_user), token_type="bearer"
     )
 
-    return UserPublic(**created_user.dict(), access_token = access_token)
-
+    return created_user.copy(update={"access_token": access_token})
+    
 @router.post("/login/token/", response_model=AccessToken, name="users:login-email-and-password")
 def user_login_with_email_and_password(
     user_repo: UsersRepository = Depends(get_repository(UsersRepository)),

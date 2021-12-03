@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import HTTPException, status
 from pydantic import ValidationError
 
-from app.models.user import UserPasswordUpdate
+from app.models.user import UserBase, UserPasswordUpdate
 from app.core.config import SECRET_KEY, JWT_AUDIENCE, ACCESS_TOKEN_EXPIRE_MINUTES
 from app.core.config import JWT_ALGORITHM
 from app.models.token import JWTCreds, JWTMeta, JWTPayload
@@ -43,12 +43,12 @@ class AuthService:
     def create_access_token_for_user(
         self,
         *,
-        user: UserInDB,
+        user: UserBase,
         secret_key: str = str(SECRET_KEY),
         audience: str = JWT_AUDIENCE,
         expires_in: int = ACCESS_TOKEN_EXPIRE_MINUTES,
     ) -> str:
-        if not user or not isinstance(user, UserInDB):
+        if not user or not isinstance(user, UserBase):
             return None
 
         jwt_meta = JWTMeta(

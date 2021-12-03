@@ -44,13 +44,13 @@ class TestUserRegistration:
         user_repo = UsersRepository(db)
         new_user = {"email": "shakira@shakira.io", "username": "shakirashakira", "password": "chantaje"}
         # make sure user doesn't exist yet
-        user_in_db = user_repo.get_user_by_email(email=new_user["email"])
+        user_in_db = user_repo.get_user_by_email(email=new_user["email"], populate=False)
         assert user_in_db is None        
         # send post request to create user and ensure it is successful
         res = await client.post(app.url_path_for("users:register-new-user"), json={"new_user": new_user})
         assert res.status_code == HTTP_201_CREATED
         # ensure that the user now exists in the db
-        user_in_db = user_repo.get_user_by_email(email=new_user["email"])
+        user_in_db = user_repo.get_user_by_email(email=new_user["email"],populate=False)
         assert user_in_db is not None
         assert user_in_db.email == new_user["email"]
         assert user_in_db.username == new_user["username"]
@@ -95,7 +95,7 @@ class TestUserRegistration:
         assert res.status_code == HTTP_201_CREATED
         # ensure that the users password is hashed in the db
         # and that we can verify it using our auth service
-        user_in_db = user_repo.get_user_by_email(email=new_user["email"])
+        user_in_db = user_repo.get_user_by_email(email=new_user["email"], populate=False)
         assert user_in_db is not None
         assert user_in_db.salt is not None and user_in_db.salt != "123"        
         assert user_in_db.password != new_user["password"]

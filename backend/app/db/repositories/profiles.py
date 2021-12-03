@@ -1,6 +1,7 @@
 from app.db.repositories.base import BaseRepository
-from app.models.profile import ProfileCreate, ProfileInDB
+from app.models.profile import ProfileCreate, ProfileInDB, ProfileUpdate
 from app.db.metadata import Profile, User
+from app.models.user import UserInDB
 
 
 class ProfilesRepository(BaseRepository):
@@ -23,3 +24,14 @@ class ProfilesRepository(BaseRepository):
         profile_record = self.db.query(Profile).join(User.profile).filter(User.username == username).first()
         if profile_record:
             return ProfileInDB(**dict(profile_record.as_dict(),**profile_record.user.as_dict()))
+
+    def update_profile(self, *, profile_update: ProfileUpdate, requesting_user: UserInDB) -> ProfileInDB:
+        profile = self.db.query(Profile).filter(Profile.user_id == requesting_user.id).first()
+        for var,value in vars(profile_update).items():
+            if value or str(value) == 'False':
+                setattr(profile, var, value) 
+        
+        self.db.add(profile)
+        self.db.commit()
+        self.db.refresh(profile)
+        return ProfileInDB(**dict(profile.as_dict(),**profile.user.as_dict()))

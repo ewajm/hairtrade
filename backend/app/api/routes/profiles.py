@@ -14,7 +14,7 @@ router = APIRouter()
 
 
 @router.get("/{username}/", response_model=ProfilePublic, name="profiles:get-profile-by-username")
-async def get_profile_by_username(
+def get_profile_by_username(
     username: str = Path(..., min_length=3, regex="^[a-zA-Z0-9_-]+$"),
     current_user: UserInDB = Depends(get_current_active_user),
     profiles_repo: ProfilesRepository = Depends(get_repository(ProfilesRepository)),
@@ -25,7 +25,13 @@ async def get_profile_by_username(
     return profile
 
 
+
 @router.put("/me/", response_model=ProfilePublic, name="profiles:update-own-profile")
-async def update_own_profile(profile_update: ProfileUpdate = Body(..., embed=True)) -> ProfilePublic:
-    return None
+def update_own_profile(
+    profile_update: ProfileUpdate = Body(..., embed=True),
+    current_user: UserInDB = Depends(get_current_active_user),
+    profiles_repo: ProfilesRepository = Depends(get_repository(ProfilesRepository)),    
+) -> ProfilePublic:
+    updated_profile = profiles_repo.update_profile(profile_update=profile_update, requesting_user=current_user)
+    return updated_profile
 

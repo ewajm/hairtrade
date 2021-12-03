@@ -67,3 +67,47 @@ class TestProfileView:
             app.url_path_for("profiles:get-profile-by-username", username="username_doesnt_match")
         )
         assert res.status_code == status.HTTP_404_NOT_FOUND          
+
+class TestProfileManagement:
+    @pytest.mark.parametrize(
+        "attr, value",
+        (
+            ("full_name", "Lebron James"),
+            ("phone_number", "555-333-1000"),
+            ("bio", "This is a test bio"),
+            ("image", "http://testimages.com/testimage"),
+        ),
+    )
+    async def test_user_can_update_own_profile(
+        self, app: FastAPI, authorized_client: AsyncClient, test_user: UserInDB, attr: str, value: str,
+    ) -> None:
+        assert getattr(test_user.profile, attr) != value
+        res = await authorized_client.put(
+            app.url_path_for("profiles:update-own-profile"), json={"profile_update": {attr: value}},
+        )
+        assert res.status_code == status.HTTP_200_OK
+        profile = ProfilePublic(**res.json())
+        assert getattr(profile, attr) == value
+        
+    @pytest.mark.parametrize(
+        "attr, value, status_code",
+        (
+            ("full_name", [], 422),
+            ("bio", {}, 422),
+            ("image", "./image-string.png", 422),
+            ("image", 5, 422),
+        ),
+    )
+    async def test_user_recieves_error_for_invalid_update_params(
+        self, 
+        app: FastAPI, 
+        authorized_client: AsyncClient, 
+        test_user: UserInDB, 
+        attr: str, 
+        value: str, 
+        status_code: int,
+    ) -> None:
+        res = await authorized_client.put(
+            app.url_path_for("profiles:update-own-profile"), json={"profile_update": {attr: value}},
+        )
+        assert res.status_code == status_code

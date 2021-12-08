@@ -15,17 +15,12 @@ class ProductType(str,Enum):
     conditioner = "conditioner"
     mask = "mask"
 
-class WhatDo(str, Enum):
-    trade = "trade"
-    sell = "sell" #get rid of this if going live
-    giveaway = "give away"
 
 class ProductBase(CoreModel):
     product_name: Optional[str]
     brand: Optional[str]
     description: Optional[str]
     type: Optional[ProductType] = "idk, a bottle"
-    what_do: Optional[WhatDo] = "trade"
     price: Optional[float]
 
 class ProductCreate(ProductBase):
@@ -33,20 +28,17 @@ class ProductCreate(ProductBase):
     type: ProductType
 
 class ProductUpdate(ProductBase):
-    what_do: Optional[WhatDo]
     type: Optional[ProductType]
 
 class ProductInDB(IDModelMixin,DateTimeModelMixin, ProductBase):
     product_name: str
     type: ProductType
-    what_do: WhatDo
 
     class Config:
         orm_mode = True
 
 class ProductPublic(ProductInDB):
     type: ProductType
-    what_do: WhatDo
-
+    
     class Config:
         orm_mod = True

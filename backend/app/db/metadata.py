@@ -14,14 +14,13 @@ class BaseColumn(object):
 
     def as_dict(self):
        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
-
+ 
 class Product(BaseColumn, Base):
     product_name = Column(Text, nullable=False,index=True)
     brand = Column(Text, nullable=True)
     description = Column(Text, nullable=True)
     type = Column(Text, nullable=False, server_default="idk, a bottle")
-    what_do = Column(Text, nullable=False, server_default="trade")
-    price = Column(Numeric(10,2), nullable=True)
+    users = relationship("ProductInstance", back_populates="user")
 
 class User(BaseColumn, Base):
     username = Column(Text, unique=True, nullable=False, index=True)      
@@ -37,7 +36,20 @@ class User(BaseColumn, Base):
         cascade="all, delete",
         passive_deletes=True,
     )
+    products = relationship("ProductInstance", back_populates="product")
 
+class ProductInstance(BaseColumn, Base):
+    _tablename_='product_instance'
+    user_id=Column(ForeignKey('user.id'), primary_key=True)
+    user = relationship("User", back_populates="products")
+    product_id = Column(ForeignKey('product.id'), primary_key=True)
+    product = relationship("Product", back_populates="users")
+    what_do = Column(Text, nullable=False, server_default="trade") 
+    price = Column(Numeric(10,2), nullable=True) 
+    comment = Column(Text,nullable=True)
+    size = Column(Text,nullable=True)
+
+#TODO add hair specific stuff like curl type, porosity etc. 
 class Profile(BaseColumn, Base):
     id = Column(Integer, primary_key=True)
     full_name = Column(Text, nullable=True)

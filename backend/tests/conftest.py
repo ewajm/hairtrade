@@ -14,16 +14,16 @@ from sqlalchemy.orm import session
 from sqlalchemy.orm import close_all_sessions
 
 from app.core.config import DATABASE_URL, SECRET_KEY, JWT_TOKEN_PREFIX
-from app.services import auth_service
 from app import settings
-from app.models.user import UserCreate, UserInDB
-
 settings.init()
 settings.db_url = f"{DATABASE_URL}_test"
 
+from app.services import auth_service
+
 from app.db.repositories.products import ProductsRepository
 from app.db.repositories.users import UsersRepository
-from app.models.product import ProductCreate, ProductType, WhatDo
+from app.models.product import ProductCreate, ProductInDB, ProductType, WhatDo
+from app.models.user import UserCreate, UserInDB
 from app.db.database import SessionLocal
 from app.db.database import engine
 
@@ -81,7 +81,7 @@ async def test_product(db:session.Session):
         what_do=WhatDo.sell,
         price=9.99
     )
-    return product_repo.create_product(new_product=new_product)
+    return ProductInDB.from_orm(product_repo.create_product(new_product=new_product))
 
 @pytest.fixture
 async def test_user(db: session.Session) -> UserInDB:
@@ -94,7 +94,7 @@ async def test_user(db: session.Session) -> UserInDB:
     existing_user = user_repo.get_user_by_email(email=new_user.email)
     if existing_user:
         return existing_user
-    return user_repo.register_new_user(new_user=new_user)
+    return UserInDB.from_orm(user_repo.register_new_user(new_user=new_user))
 
 @pytest.fixture
 def authorized_client(client: AsyncClient, test_user: UserInDB) -> AsyncClient:
@@ -116,4 +116,4 @@ async def test_user2(db: session.Session) -> UserInDB:
     existing_user = user_repo.get_user_by_email(email=new_user.email)
     if existing_user:
         return existing_user
-    return user_repo.register_new_user(new_user=new_user)
+    return UserInDB.from_orm(user_repo.register_new_user(new_user=new_user))

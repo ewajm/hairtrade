@@ -6,7 +6,7 @@ from fastapi import FastAPI
 
 from starlette.status  import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_422_UNPROCESSABLE_ENTITY, HTTP_201_CREATED
 
-from app.models.product import ProductCreate
+from app.models.product import ProductCreate, ProductInDB
 from app.models.product import ProductType
 from app.models.product import WhatDo
 from app.models.product import ProductPublic
@@ -69,12 +69,12 @@ class TestCreateProduct:
         
 class TestGetProduct:
     async def test_get_product_by_id(
-        self, app:FastAPI, client:AsyncClient, test_product:Product
+        self, app:FastAPI, client:AsyncClient, test_product:ProductInDB
     ) -> None:
         res = await client.get(app.url_path_for("products:get-product-by-id",id=test_product.id))
         assert res.status_code == HTTP_200_OK
         product = ProductPublic(**res.json())
-        assert product == ProductPublic.from_orm(test_product)
+        assert product == test_product
 
     @pytest.mark.parametrize(
         "id, status_code",
@@ -91,14 +91,14 @@ class TestGetProduct:
         assert res.status_code == status_code
 
     async def test_get_all_products_returns_valid_response(
-        self, app: FastAPI, client: AsyncClient, test_product: Product
+        self, app: FastAPI, client: AsyncClient, test_product: ProductInDB
     ) -> None:
         res = await client.get(app.url_path_for("products:get-all-products"))
         assert res.status_code == HTTP_200_OK
         assert isinstance(res.json(), list)
         assert len(res.json()) > 0        
         products = [ProductPublic(**l) for l in res.json()]
-        assert ProductPublic.from_orm(test_product) in products
+        assert test_product in products
 
 class TestUpdateProduct:
     @pytest.mark.parametrize(
@@ -122,7 +122,7 @@ class TestUpdateProduct:
         self, 
         app: FastAPI, 
         client: AsyncClient, 
-        test_product: Product, 
+        test_product: ProductInDB, 
         attrs_to_change: List[str], 
         values: List[str],
     ) -> None:
@@ -147,7 +147,7 @@ class TestUpdateProduct:
             assert attr_to_change != getattr(test_product, attrs_to_change[i])
             assert attr_to_change == values[i] 
         # make sure that no other attributes' values have changed
-        test_product_obj = ProductPublic.from_orm(test_product)
+        test_product_obj = ProductPublic(**test_product.dict())
         for attr, value in updated_product.dict().items():
             if attr not in attrs_to_change and attr != "updated_at":
                 assert getattr(test_product_obj, attr) == value
@@ -165,7 +165,7 @@ class TestUpdateProduct:
             (1, {"what_do": None}, 400),
         ),
     )
-    async def test_update_cleaning_with_invalid_input_throws_error(
+    async def test_update_product_with_invalid_input_throws_error(
         self,
         app: FastAPI,
         client: AsyncClient,
@@ -185,7 +185,7 @@ class TestDeleteProduct:
         self,
         app: FastAPI,
         client: AsyncClient,
-        test_product: Product,
+        test_product: ProductInDB,
     ) -> None:
         # delete the cleaning
         res = await client.delete(

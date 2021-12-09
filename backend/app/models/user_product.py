@@ -10,27 +10,27 @@ class WhatDo(str, Enum):
     sell = "sell" #get rid of this if going live
     giveaway = "give away"
 
-class ProductInstanceBase(CoreModel):
+class UserProductBase(CoreModel):
     size: Optional[str]
     comment: Optional[str]
     what_do: Optional[WhatDo] = "trade"
     price: Optional[float]
 
-class ProductInstanceCreate(ProductInstanceBase):
+class UserProductCreate(UserProductBase):
     """
     The only field required to create a profile is the users id
     """
     user_id: int
     product_id: int
 
-class ProductInstanceUpdate(ProductInstanceBase):
+class UserProductUpdate(UserProductBase):
     pass
 
-class ProductInstanceInDB(DateTimeModelMixin, ProductInstanceBase):
+class UserProductInDB(DateTimeModelMixin, UserProductBase):
     class Config:
         orm_mode = True
 
-class ProductInstancePublic(ProductInstanceInDB):
+class UserProductPublic(UserProductInDB):
     user: Optional(UserPublic)
     product: Optional(ProductPublic)
 

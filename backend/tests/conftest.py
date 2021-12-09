@@ -14,16 +14,16 @@ from sqlalchemy.orm import session
 from sqlalchemy.orm import close_all_sessions
 
 from app.core.config import DATABASE_URL, SECRET_KEY, JWT_TOKEN_PREFIX
-from app.services import auth_service
 from app import settings
-from app.models.user import UserCreate, UserInDB
-
 settings.init()
 settings.db_url = f"{DATABASE_URL}_test"
 
+from app.services import auth_service
+
 from app.db.repositories.products import ProductsRepository
 from app.db.repositories.users import UsersRepository
-from app.models.product import ProductCreate, ProductType, WhatDo
+from app.models.product import ProductCreate, ProductInDB, ProductType, WhatDo
+from app.models.user import UserCreate, UserInDB
 from app.db.database import SessionLocal
 from app.db.database import engine
 
@@ -106,7 +106,7 @@ def authorized_client(client: AsyncClient, test_user: UserInDB) -> AsyncClient:
     return client
 
 @pytest.fixture
-async def test_user2(db: session.Session) -> UserInDB:
+async def test_user2(db: session.Session):
     new_user = UserCreate(
         email="serena@williams.io",
         username="serenawilliams",

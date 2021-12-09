@@ -5,12 +5,12 @@ from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import HTTPException, status
 from pydantic import ValidationError
+from app.db.metadata import User
 
-from app.models.user import UserBase, UserPasswordUpdate
+from app.models.user import UserPasswordUpdate
 from app.core.config import SECRET_KEY, JWT_AUDIENCE, ACCESS_TOKEN_EXPIRE_MINUTES
 from app.core.config import JWT_ALGORITHM
 from app.models.token import JWTCreds, JWTMeta, JWTPayload
-from app.models.user import UserInDB
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -43,12 +43,12 @@ class AuthService:
     def create_access_token_for_user(
         self,
         *,
-        user: UserBase,
+        user: User,
         secret_key: str = str(SECRET_KEY),
         audience: str = JWT_AUDIENCE,
         expires_in: int = ACCESS_TOKEN_EXPIRE_MINUTES,
     ) -> str:
-        if not user or not isinstance(user, UserBase):
+        if not user or not isinstance(user, User):
             return None
 
         jwt_meta = JWTMeta(

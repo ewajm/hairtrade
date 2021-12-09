@@ -74,7 +74,7 @@ class TestGetProduct:
         res = await client.get(app.url_path_for("products:get-product-by-id",id=test_product.id))
         assert res.status_code == HTTP_200_OK
         product = ProductPublic(**res.json())
-        assert product == ProductPublic(**test_product.as_dict())
+        assert product == ProductPublic.from_orm(test_product)
 
     @pytest.mark.parametrize(
         "id, status_code",
@@ -98,7 +98,7 @@ class TestGetProduct:
         assert isinstance(res.json(), list)
         assert len(res.json()) > 0        
         products = [ProductPublic(**l) for l in res.json()]
-        assert ProductPublic(**test_product.as_dict()) in products
+        assert ProductPublic.from_orm(test_product) in products
 
 class TestUpdateProduct:
     @pytest.mark.parametrize(
@@ -147,7 +147,7 @@ class TestUpdateProduct:
             assert attr_to_change != getattr(test_product, attrs_to_change[i])
             assert attr_to_change == values[i] 
         # make sure that no other attributes' values have changed
-        test_product_obj = ProductPublic(**test_product.as_dict())
+        test_product_obj = ProductPublic.from_orm(test_product)
         for attr, value in updated_product.dict().items():
             if attr not in attrs_to_change and attr != "updated_at":
                 assert getattr(test_product_obj, attr) == value
@@ -165,7 +165,7 @@ class TestUpdateProduct:
             (1, {"what_do": None}, 400),
         ),
     )
-    async def test_update_cleaning_with_invalid_input_throws_error(
+    async def test_update_product_with_invalid_input_throws_error(
         self,
         app: FastAPI,
         client: AsyncClient,

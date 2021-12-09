@@ -1,5 +1,6 @@
 from sqlalchemy import *
 from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship
 from .database import Base
 
@@ -58,3 +59,5 @@ class Profile(BaseColumn, Base):
     image =  Column(Text, nullable=True)
     user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
     user = relationship("User", back_populates="profile")
+    username = association_proxy("user", "username")
+    email = association_proxy("user", "email")

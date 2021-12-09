@@ -1,5 +1,6 @@
 from typing import List
 from fastapi import APIRouter, Body, Depends, HTTPException, Path
+from pydantic.tools import parse_obj_as
 from sqlalchemy.orm import session
 from sqlalchemy.sql.expression import delete
 from sqlalchemy.sql.sqltypes import Integer
@@ -16,7 +17,7 @@ def get_all_products(
     product_repo: ProductsRepository = Depends(get_repository(ProductsRepository)),
 ) -> List[ProductPublic]:
     all_products = product_repo.get_all_products()
-    return all_products
+    return [ProductPublic.from_orm(l) for l in all_products]
 
 @router.get("/{id}/", response_model=ProductPublic, name="products:get-product-by-id")
 def get_product_by_id(
@@ -28,7 +29,7 @@ def get_product_by_id(
     if not product:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="no product found with that id.")
 
-    return product
+    return ProductPublic.from_orm(product)
 
 @router.post("/", response_model=ProductPublic, name="products:create-product", status_code=HTTP_201_CREATED)
 def create_new_product(
@@ -36,7 +37,7 @@ def create_new_product(
     products_repo: ProductsRepository = Depends(get_repository(ProductsRepository)),
 ) -> ProductPublic:
     created_product = products_repo.create_product(new_product=new_product)
-    return created_product
+    return ProductPublic.from_orm(created_product)
 
 @router.put("/{id}/", response_model=ProductPublic, name="products:update-product-by-id")
 def update_product(
@@ -48,7 +49,7 @@ def update_product(
     if not updated_product:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="no product found with that id.")
 
-    return updated_product
+    return ProductPublic.from_orm(updated_product)
 
 
 @router.delete("/{id}/", response_model=int, name = "products:delete-product-by-id")

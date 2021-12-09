@@ -4,6 +4,7 @@ from databases import Database
 
 from fastapi import FastAPI, status
 from httpx import AsyncClient
+from app.db.metadata import Profile
 from app.db.repositories.profiles import ProfilesRepository
 
 from app.models.user import UserInDB, UserPublic
@@ -39,7 +40,7 @@ class TestProfileCreate:
         created_user = UserPublic(**res.json())
         user_profile = profiles_repo.get_profile_by_user_id(user_id=created_user.id)
         assert user_profile is not None
-        assert isinstance(user_profile, ProfileInDB)     
+        assert ProfileInDB.from_orm(user_profile) is not None  
 
 class TestProfileView:
     async def test_authenticated_user_can_view_other_users_profile(

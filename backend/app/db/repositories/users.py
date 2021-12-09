@@ -17,23 +17,19 @@ class UsersRepository(BaseRepository):
         self.auth_service = auth_service
         self.profiles_repo = ProfilesRepository(db)  
 
-    def get_user_by_email(self, *, email: EmailStr, populate: bool = True) -> UserInDB:
+    def get_user_by_email(self, *, email: EmailStr):
         user_record = self.db.query(User).filter(User.email == email).first()
         if not user_record:
             return None
-        if populate:
-            return self.populate_user(user=user_record)
-        return UserInDB(**user_record.as_dict())
+        return user_record
         
-    def get_user_by_username(self, *, username: str, populate: bool = True) -> UserInDB:
+    def get_user_by_username(self, *, username: str):
         user_record = self.db.query(User).filter(User.username == username).first()
         if not user_record:
             return None
-        if populate:
-            return self.populate_user(user=user_record)
-        return UserInDB(**user_record.as_dict())
+        return user_record
         
-    def register_new_user(self, *, new_user: UserCreate) -> UserInDB:
+    def register_new_user(self, *, new_user: UserCreate):
         # make sure email isn't already taken
         if self.get_user_by_email(email=new_user.email):
             raise HTTPException(
@@ -55,12 +51,12 @@ class UsersRepository(BaseRepository):
         self.db.refresh(created_user)
 
         self.profiles_repo.create_profile_for_user(profile_create=ProfileCreate(user_id=created_user.id))
+        print(str(created_user))
+        return created_user
 
-        return self.populate_user(user = created_user)
-
-    def authenticate_user(self, *, email: EmailStr, password: str) -> Optional[UserInDB]:
+    def authenticate_user(self, *, email: EmailStr, password: str):
         # make user user exists in db
-        user = self.get_user_by_email(email=email, populate=False)
+        user = self.get_user_by_email(email=email)
         print(str(user))
         if not user:
             return None
@@ -69,11 +65,3 @@ class UsersRepository(BaseRepository):
             return None
         return user
 
-    def populate_user(self, *, user: User) -> UserInDB:
-        return UserPublic(
-            # unpack the user in db dict into the UserPublic model
-            # which will remove "password" and "salt"
-            **user.as_dict(),
-            # fetch the user's profile from the profiles repo
-            profile=ProfilePublic(**user.profile.as_dict())
-        )

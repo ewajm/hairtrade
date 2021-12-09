@@ -81,7 +81,7 @@ async def test_product(db:session.Session):
         what_do=WhatDo.sell,
         price=9.99
     )
-    return ProductInDB.from_orm(product_repo.create_product(new_product=new_product))
+    return product_repo.create_product(new_product=new_product)
 
 @pytest.fixture
 async def test_user(db: session.Session) -> UserInDB:
@@ -94,7 +94,7 @@ async def test_user(db: session.Session) -> UserInDB:
     existing_user = user_repo.get_user_by_email(email=new_user.email)
     if existing_user:
         return existing_user
-    return UserInDB.from_orm(user_repo.register_new_user(new_user=new_user))
+    return user_repo.register_new_user(new_user=new_user)
 
 @pytest.fixture
 def authorized_client(client: AsyncClient, test_user: UserInDB) -> AsyncClient:
@@ -106,7 +106,7 @@ def authorized_client(client: AsyncClient, test_user: UserInDB) -> AsyncClient:
     return client
 
 @pytest.fixture
-async def test_user2(db: session.Session) -> UserInDB:
+async def test_user2(db: session.Session):
     new_user = UserCreate(
         email="serena@williams.io",
         username="serenawilliams",
@@ -116,4 +116,4 @@ async def test_user2(db: session.Session) -> UserInDB:
     existing_user = user_repo.get_user_by_email(email=new_user.email)
     if existing_user:
         return existing_user
-    return UserInDB.from_orm(user_repo.register_new_user(new_user=new_user))
+    return user_repo.register_new_user(new_user=new_user)

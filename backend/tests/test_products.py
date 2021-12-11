@@ -8,7 +8,6 @@ from starlette.status  import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_422_UNPROCES
 
 from app.models.product import ProductCreate
 from app.models.product import ProductType
-from app.models.product import WhatDo
 from app.models.product import ProductPublic
 from app.db.metadata import Product  
 # decorate all tests with @pytest.mark.asyncio
@@ -21,8 +20,6 @@ def new_product():
         description="test description",
         type=ProductType.cream,
         brand="test brand",
-        what_do=WhatDo.trade,
-        price=0.00
     )
 
 class TestProductsRoutes:
@@ -52,10 +49,8 @@ class TestCreateProduct:
             (None, 422),
             ({}, 422),
             ({"product_name": "test_name"}, 422),
-            ({"price": 10.00}, 422),
             ({"product_name:": "test_name", "description": "test"}, 422),
             ({"product_name:": "test_name", "type": ProductType.dunno}, 422),
-            ({"product_name:": "test_name", "what_do": WhatDo.trade}, 422),
             ({"description:": "test_name", "type": ProductType.dunno}, 422),
         ),
     )
@@ -106,7 +101,6 @@ class TestUpdateProduct:
         (
             (["product_name"], ["new fake product name"]),
             (["description"], ["new fake product description"]),
-            (["price"], [3.14]),
             (["type"], ["gel"]),            
             (
                 ["product_name", "brand"], 
@@ -115,7 +109,6 @@ class TestUpdateProduct:
                     "extra new fake product brand",
                 ],
             ),
-            (["what_do", "type"], ["give away", "oil"]),
         ),
     )
     async def test_update_product_with_valid_input(
@@ -161,8 +154,6 @@ class TestUpdateProduct:
             (1, None, 422),
             (1, {"type": "invalid product type"}, 422),
             (1, {"type": None}, 400),
-            (1, {"what_do": "invalid what_do type"}, 422),
-            (1, {"what_do": None}, 400),
         ),
     )
     async def test_update_product_with_invalid_input_throws_error(

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 from app.models.core import CoreModel
 from app.models.core import IDModelMixin
 from app.models.core import DateTimeModelMixin
@@ -21,7 +21,6 @@ class ProductBase(CoreModel):
     brand: Optional[str]
     description: Optional[str]
     type: Optional[ProductType] = "idk, a bottle"
-    price: Optional[float]
 
 class ProductCreate(ProductBase):
     product_name: str
@@ -39,6 +38,10 @@ class ProductInDB(IDModelMixin,DateTimeModelMixin, ProductBase):
 
 class ProductPublic(ProductInDB):
     type: ProductType
+    instances: "Optional[List[UserProductPublic]]"
     
     class Config:
         orm_mod = True
+
+from app.models.user_product import UserProductPublic
+ProductPublic.update_forward_refs()

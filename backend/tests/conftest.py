@@ -15,6 +15,7 @@ from sqlalchemy.orm import close_all_sessions
 
 from app.core.config import DATABASE_URL, SECRET_KEY, JWT_TOKEN_PREFIX
 from app import settings
+
 settings.init()
 settings.db_url = f"{DATABASE_URL}_test"
 
@@ -22,7 +23,7 @@ from app.services import auth_service
 
 from app.db.repositories.products import ProductsRepository
 from app.db.repositories.users import UsersRepository
-from app.models.product import ProductCreate, ProductInDB, ProductType, WhatDo
+from app.models.product import ProductCreate, ProductInDB, ProductType
 from app.models.user import UserCreate, UserInDB
 from app.db.database import SessionLocal
 from app.db.database import engine
@@ -78,8 +79,6 @@ async def test_product(db:session.Session):
         description="fake description",
         type=ProductType.cream,
         brand="fake brand",
-        what_do=WhatDo.sell,
-        price=9.99
     )
     return product_repo.create_product(new_product=new_product)
 

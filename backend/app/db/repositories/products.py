@@ -8,13 +8,6 @@ from app.db.metadata import Product
 
 class ProductsRepository(BaseRepository):
 
-    def create_product(self,new_product:ProductCreate):
-        db_product = Product(**new_product.dict())
-        self.db.add(db_product)
-        self.db.commit()
-        self.db.refresh(db_product)
-        return db_product
-
     def get_product_by_id(self, *, id:int):
         product = self.db.query(Product).filter(Product.id == id).first()
         
@@ -22,6 +15,23 @@ class ProductsRepository(BaseRepository):
             return None
 
         return product
+
+    def get_product_by_name(self, *, name:str):
+        product = self.db.query(Product).filter(Product.product_name == name).first()
+        
+        if not product:
+            return None
+
+        return product
+
+    def create_product(self,new_product:ProductCreate):
+        if self.get_product_by_name(name=new_product.product_name):
+            return None
+        db_product = Product(**new_product.dict())
+        self.db.add(db_product)
+        self.db.commit()
+        self.db.refresh(db_product)
+        return db_product
         
     def get_all_products(self):
         return self.db.query(Product).all()

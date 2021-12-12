@@ -4,7 +4,7 @@ from fastapi.routing import APIRouter
 from app.api.routes.products import router as products_router
 from app.api.routes.users import router as users_router
 from app.api.routes.profiles import router as profiles_router
-from app.api.routes.user_products import router as user_product_router
+from app.api.routes.items import router as user_product_router
 
 router = APIRouter()
 

@@ -75,10 +75,10 @@ class UserInDB(IDModelMixin, DateTimeModelMixin, UserBase):
 class UserPublic(IDModelMixin, DateTimeModelMixin, UserBase):
     access_token: Optional[AccessToken]
     profile: Optional[ProfilePublic]
-    products: "Optional[List[UserProductPublic]]"
+    products: "Optional[List[ItemPublicByUser]]"
 
     class Config:
         orm_mode = True
 
-from app.models.user_product import UserProductPublic
+from app.models.item import ItemPublicByUser
 UserPublic.update_forward_refs()

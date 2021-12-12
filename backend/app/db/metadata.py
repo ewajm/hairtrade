@@ -21,7 +21,7 @@ class Product(BaseColumn, Base):
     brand = Column(Text, nullable=True)
     description = Column(Text, nullable=True)
     type = Column(Text, nullable=False, server_default="idk, a bottle")
-    users = relationship("UserProduct", back_populates="product",
+    users = relationship("Item", back_populates="product",
         cascade="all, delete",
         passive_deletes=True,)
 
@@ -39,13 +39,13 @@ class User(BaseColumn, Base):
         cascade="all, delete",
         passive_deletes=True,
     )
-    products = relationship("UserProduct", back_populates="user",
+    products = relationship("Item", back_populates="user",
         cascade="all, delete",
         passive_deletes=True,
     )
 
-class UserProduct(Base):
-    __tablename__='user_product'
+class Item(Base):
+    __tablename__='item'
     user_id=Column(ForeignKey('user.id'), primary_key=True)
     user = relationship("User", back_populates="products")
     product_id = Column(ForeignKey('product.id'), primary_key=True)

@@ -15,34 +15,40 @@ class Size(str, Enum):
     regular = "regular"
     jumbo = "jumbo"
 
-class UserProductBase(CoreModel):
+class ItemBase(CoreModel):
     size: Optional[Size] = "regular"
     comment: Optional[str]
     what_do: Optional[WhatDo] = "trade"
     price: Optional[float]
 
-class UserProductCreate(UserProductBase):
+class ItemCreate(ItemBase):
     user_id: int
     product_id: int
     what_do:WhatDo = "trade"
 
-class UserProductUpdate(UserProductBase):
+class ItemUpdate(ItemBase):
     pass
 
-class UserProductInDB(UserProductBase):
+class ItemInDB(ItemBase):
     user_id: int
     product_id: int
 
     class Config:
         orm_mode = True
 
-class UserProductPublic(UserProductInDB):
-    # user: "Optional[UserPublic]"
-    # product: "Optional[ProductPublic]"
+class ItemPublicByUser(ItemInDB):
+    product: "Optional[ProductPublic]"
+
+    class Config:
+        orm_mode = True
+
+class ItemPublicByProduct(ItemInDB):
+    user: "Optional[UserPublic]"
 
     class Config:
         orm_mode = True
 
 from app.models.product import ProductPublic
 from app.models.user import UserPublic
-UserProductPublic.update_forward_refs()
+ItemPublicByUser.update_forward_refs()
+ItemPublicByProduct.update_forward_refs()

@@ -44,8 +44,9 @@ class User(BaseColumn, Base):
         passive_deletes=True,
     )
 
-class Item(Base):
+class Item(BaseColumn, Base):
     __tablename__='item'
+    id = Column(Integer, primary_key=True, index=True, unique=True, autoincrement=True)
     user_id=Column(ForeignKey('user.id'), primary_key=True)
     user = relationship("User", back_populates="products")
     product_id = Column(ForeignKey('product.id'), primary_key=True)

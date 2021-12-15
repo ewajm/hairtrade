@@ -29,21 +29,32 @@ class ItemCreate(ItemBase):
 class ItemUpdate(ItemBase):
     pass
 
-class ItemInDB(ItemBase):
+class ItemInDB(ItemBase, IDModelMixin, DateTimeModelMixin):
+    id: int
     user_id: int
     product_id: int
 
     class Config:
         orm_mode = True
 
+class ItemPublic(ItemInDB):
+    id: int
+    user_id: int
+    product_id: int
+    product: "ProductPublic"
+    user: "UserPublic"
+
+    class Config:
+        orm_mode = True
+
 class ItemPublicByUser(ItemInDB):
-    product: "Optional[ProductPublic]"
+    product: "ProductPublic"
 
     class Config:
         orm_mode = True
 
 class ItemPublicByProduct(ItemInDB):
-    user: "Optional[UserPublic]"
+    user: "UserPublic"
 
     class Config:
         orm_mode = True
@@ -52,3 +63,4 @@ from app.models.product import ProductPublic
 from app.models.user import UserPublic
 ItemPublicByUser.update_forward_refs()
 ItemPublicByProduct.update_forward_refs()
+ItemPublic.update_forward_refs()

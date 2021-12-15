@@ -80,6 +80,9 @@ async def test_product(db:session.Session):
         type=ProductType.cream,
         brand="fake brand",
     )
+    existing_product = product_repo.get_product_by_name(name = new_product.product_name)
+    if existing_product:
+        return existing_product
     return product_repo.create_product(new_product=new_product)
 
 @pytest.fixture

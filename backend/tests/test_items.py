@@ -60,17 +60,17 @@ class TestGetItem:
             what_do = "trade",
         )
         item_repo = ItemRepository(db)
-        return ItemPublic.from_orm(item_repo.create_item(item_create = new_item))
+        return item_repo.create_item(item_create = new_item)
 
     
     async def test_item_can_be_retrieved_by_id(self, app:FastAPI, authorized_client: AsyncClient, test_user:UserInDB, test_product:ProductInDB, db:session.Session)-> None:
-        nu_item = self.create_new_product(user=test_user, product=test_product, db=db)
+        nu_item = ItemPublic.from_orm(self.create_new_product(user=test_user, product=test_product, db=db))
         res = await authorized_client.get(app.url_path_for("items:get-item-by-id", id=nu_item.id))
         returned_item = ItemPublic(**res.json())
         assert nu_item == returned_item
 
     async def test_items_can_be_retrieved_by_user(self, app:FastAPI, authorized_client: AsyncClient, test_user:UserInDB, test_product: ProductInDB, db:session.Session) -> None:
-        nu_item = self.create_new_product(user=test_user, product=test_product, db=db)
+        nu_item = ItemPublicByUser.from_orm(self.create_new_product(user=test_user, product=test_product, db=db))
         nu_item_create2 = ItemCreate(
             user_id = test_user.id,
             product_id = test_product.id,
@@ -78,7 +78,7 @@ class TestGetItem:
             size = Size.sample
         )
         item_repo = ItemRepository(db)
-        nu_item1 = ItemPublic.from_orm(item_repo.create_item(item_create = nu_item_create2)) 
+        nu_item1 = ItemPublicByUser.from_orm(item_repo.create_item(item_create = nu_item_create2)) 
         res = await authorized_client.get(app.url_path_for("items:get-items-by-user", user_id = test_user.id))
         items = [ItemPublicByUser(**l) for l in res.json()] 
         assert nu_item in items

@@ -28,7 +28,10 @@ class ItemRepository(BaseRepository):
         items = self.db.query(Item).filter(Item.user_id == user_id).all()
         if not items:
             return None
-
+        for l in items:
+            print(l.id)
+            print(l.product_id)
+            print(l.user_id)
         return items
 
     def get_items_by_product_id(self, *, product_id:int):

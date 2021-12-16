@@ -38,9 +38,6 @@ class ItemInDB(ItemBase, IDModelMixin, DateTimeModelMixin):
         orm_mode = True
 
 class ItemPublic(ItemInDB):
-    id: int
-    user_id: int
-    product_id: int
     product: "ProductPublic"
     user: "UserPublic"
 

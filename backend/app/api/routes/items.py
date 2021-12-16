@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Path, Body, Depends, status
 from fastapi.exceptions import HTTPException
 from starlette.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND
@@ -23,7 +24,7 @@ def create_new_item(
 
 @router.get("/{id}/", response_model=ItemPublic, name = "items:get-item-by-id")
 def get_item_by_id(
-    id: int = Path(..., ge=1, title="The ID of the cleaning to delete."),
+    id: int = Path(..., ge=1, title="The ID of the item to retrieve."),
     item_repo: ItemRepository = Depends(get_repository(ItemRepository))
 ) -> ItemPublic:
     item = item_repo.get_item_by_id(id=id)
@@ -32,3 +33,15 @@ def get_item_by_id(
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="no item found with that id.")
 
     return ItemPublic.from_orm(item)
+
+@router.get("/users/{user_id}/", response_model=List[ItemPublicByUser], name = "items:get-items-by-user")
+def get_item_by_id(
+    user_id: int = Path(..., ge=1, title="The ID of the user to get items for."),
+    item_repo: ItemRepository = Depends(get_repository(ItemRepository))
+) -> List[ItemPublicByUser]:
+    items = item_repo.get_items_by_user_id(user_id=user_id)
+
+    if not items:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="no items found for that user.")
+
+    return [ItemPublicByUser.from_orm(l) for l in items]

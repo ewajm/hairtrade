@@ -38,26 +38,26 @@ class ItemInDB(ItemBase, IDModelMixin, DateTimeModelMixin):
         orm_mode = True
 
 class ItemPublic(ItemInDB):
-    product: "ProductPublic"
-    user: "UserPublic"
+    product: "ProductInDB"
+    user: "UserInDB"
 
     class Config:
         orm_mode = True
 
 class ItemPublicByUser(ItemInDB):
-    product: "ProductPublic"
+    product: "ProductInDB"
 
     class Config:
         orm_mode = True
 
 class ItemPublicByProduct(ItemInDB):
-    user: "UserPublic"
+    user: "UserInDB"
 
     class Config:
         orm_mode = True
 
-from app.models.product import ProductPublic
-from app.models.user import UserPublic
+from app.models.product import ProductInDB
+from app.models.user import UserInDB
 ItemPublicByUser.update_forward_refs()
 ItemPublicByProduct.update_forward_refs()
 ItemPublic.update_forward_refs()

@@ -3,14 +3,14 @@ import pytest
 from fastapi import FastAPI, status
 from httpx import AsyncClient
 from sqlalchemy.orm import session
-from starlette.status import HTTP_201_CREATED
+from starlette.status import HTTP_200_OK, HTTP_201_CREATED
 from app.api.routes.products import create_new_product
 from app.db.metadata import Item
 from app.db.repositories.items import ItemRepository
 from app.models.product import ProductInDB
 
 from app.models.user import UserInDB
-from app.models.item import ItemInDB, ItemPublic, ItemPublicByUser, Size, ItemCreate, WhatDo
+from app.models.item import ItemInDB, ItemPublic, ItemPublicByProduct, ItemPublicByUser, Size, ItemCreate, WhatDo
 
 pytestmark = pytest.mark.asyncio
 
@@ -63,13 +63,13 @@ class TestGetItem:
         return item_repo.create_item(item_create = new_item)
 
     
-    async def test_item_can_be_retrieved_by_id(self, app:FastAPI, authorized_client: AsyncClient, test_user:UserInDB, test_product:ProductInDB, db:session.Session)-> None:
+    async def test_item_can_be_retrieved_by_id(self, app:FastAPI, client: AsyncClient, test_user:UserInDB, test_product:ProductInDB, db:session.Session)-> None:
         nu_item = ItemPublic.from_orm(self.create_new_product(user=test_user, product=test_product, db=db))
-        res = await authorized_client.get(app.url_path_for("items:get-item-by-id", id=nu_item.id))
+        res = await client.get(app.url_path_for("items:get-item-by-id", id=nu_item.id))
         returned_item = ItemPublic(**res.json())
         assert nu_item == returned_item
 
-    async def test_items_can_be_retrieved_by_user(self, app:FastAPI, authorized_client: AsyncClient, test_user:UserInDB, test_product: ProductInDB, db:session.Session) -> None:
+    async def test_items_can_be_retrieved_by_user(self, app:FastAPI, client: AsyncClient, test_user:UserInDB, test_product: ProductInDB, db:session.Session) -> None:
         nu_item = ItemPublicByUser.from_orm(self.create_new_product(user=test_user, product=test_product, db=db))
         nu_item_create2 = ItemCreate(
             user_id = test_user.id,
@@ -79,7 +79,28 @@ class TestGetItem:
         )
         item_repo = ItemRepository(db)
         nu_item1 = ItemPublicByUser.from_orm(item_repo.create_item(item_create = nu_item_create2)) 
-        res = await authorized_client.get(app.url_path_for("items:get-items-by-user", user_id = test_user.id))
+        res = await client.get(app.url_path_for("items:get-items-by-user", user_id = test_user.id))
         items = [ItemPublicByUser(**l) for l in res.json()] 
         assert nu_item in items
         assert nu_item1 in items    
+
+    async def test_items_can_be_retrieved_by_product(self, app:FastAPI, client: AsyncClient, test_user:UserInDB, test_product: ProductInDB, db:session.Session) -> None:
+        nu_item = ItemPublicByProduct.from_orm(self.create_new_product(user=test_user, product=test_product, db=db))
+        nu_item_create2 = ItemCreate(
+            user_id = test_user.id,
+            product_id = test_product.id,
+            what_do = WhatDo.giveaway,
+            size = Size.sample
+        )
+        item_repo = ItemRepository(db)
+        nu_item1 = ItemPublicByProduct.from_orm(item_repo.create_item(item_create = nu_item_create2)) 
+        res = await client.get(app.url_path_for("items:get-items-by-product", product_id = test_product.id))
+        items = [ItemPublicByProduct(**l) for l in res.json()] 
+        assert nu_item in items
+        assert nu_item1 in items    
+
+    async def test_all_items_can_be_retrieved(self, app:FastAPI, client:AsyncClient, db:session.Session) -> None:
+        res = await client.get(app.url_path_for("items:get-all-items"))
+        assert res.status_code == HTTP_200_OK
+        assert isinstance(res.json(), list)
+        assert len(res.json()) > 0       

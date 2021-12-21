@@ -7,7 +7,7 @@ from app.api.dependencies.database import get_repository
 from app.db.repositories.items import ItemRepository
 from app.models.user import UserInDB
 
-from app.models.item import ItemCreate, ItemPublic, ItemPublicByUser
+from app.models.item import ItemCreate, ItemPublic, ItemPublicByProduct, ItemPublicByUser
 
 router = APIRouter()
 
@@ -45,3 +45,23 @@ def get_item_by_id(
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="no items found for that user.")
 
     return [ItemPublicByUser.from_orm(l) for l in items]
+
+@router.get("/products/{product_id}/", response_model=List[ItemPublicByProduct], name = "items:get-items-by-product")
+def get_item_by_id(
+    product_id: int = Path(..., ge=1, title="The ID of the product to get items for."),
+    item_repo: ItemRepository = Depends(get_repository(ItemRepository))
+) -> List[ItemPublicByProduct]:
+    items = item_repo.get_items_by_product_id(product_id=product_id)
+
+    if not items:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="no items found for that product.")
+
+    return [ItemPublicByProduct.from_orm(l) for l in items]
+
+@router.get("/", response_model=List[ItemPublic], name="items:get-all-items")
+def get_all_products(
+    item_repo: ItemRepository = Depends(get_repository(ItemRepository)),
+) -> List[ItemPublic]:
+    all_items = item_repo.get_all_items()
+    return [ItemPublic.from_orm(l) for l in all_items]
+

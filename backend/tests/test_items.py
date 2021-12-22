@@ -1,3 +1,4 @@
+from typing import List
 from fastapi.exceptions import HTTPException
 import pytest
 from fastapi import FastAPI, status
@@ -109,7 +110,77 @@ class TestGetItem:
         res = await client.get(app.url_path_for("items:get-all-items"))
         assert res.status_code == HTTP_200_OK
         assert isinstance(res.json(), list)
-        assert len(res.json()) > 0       
+        assert len(res.json()) > 0
+
+class TestUpdateItem:
+    test_item_id = None
+
+    def get_item(self, *, user:UserInDB, product:ProductInDB, db:session.Session) -> ItemPublic:
+        item_repo = ItemRepository(db)
+        if(self.test_item_id):
+            return item_repo.get_item_by_id(id = self.test_item_id)
+        new_item = ItemCreate(
+            user_id = user.id,
+            product_id = product.id,
+            what_do = "trade",
+            size = "regular",
+            comment = "didn't like smell"
+        )
+        created_item = item_repo.create_item(item_create = new_item)
+        self.test_item_id = created_item.id
+        return created_item
+
+    @pytest.mark.parametrize(
+        "attrs_to_change, values",
+        (
+            (["what_do"],["give away"]),
+            (["comment"],["too heavy for my hair"]),
+            (["size"], ["jumbo"]),
+            (
+                ["what_do", "price"],
+                [
+                    "sell",
+                    400,
+                ],
+            ),
+        ),
+    )
+    async def test_update_item_with_valid_input(
+        self,
+        app:FastAPI,
+        authorized_client: AsyncClient,
+        test_user: UserInDB,
+        test_product: ProductInDB,
+        db:session.Session,
+        attrs_to_change: List[str],
+        values: List[str],
+    ) -> None:
+        item_update = {
+            "item_update": {
+                attrs_to_change[i]: values[i] for i in range(len(attrs_to_change))
+            }
+        }
+        target = self.get_item(user = test_user, product = test_product, db=db)
+        res = await authorized_client.put(
+            app.url_path_for(
+                "items:update-item-by-id",
+                id=target.id,
+            ),
+            json = item_update
+        )
+        assert res.status_code == HTTP_200_OK
+        updated_item = ItemPublic(**res.json())
+        assert updated_item.id == target.id  # make sure it's the same cleaning
+        # make sure that any attribute we updated has changed to the correct value
+        for i in range(len(attrs_to_change)):
+            attr_to_change = getattr(updated_item, attrs_to_change[i])
+            assert attr_to_change != getattr(target, attrs_to_change[i])
+            assert attr_to_change == values[i] 
+        # make sure that no other attributes' values have changed
+        target_item = ItemPublic.from_orm(target)
+        for attr, value in updated_item.dict().items():
+            if attr not in attrs_to_change and attr != "updated_at":
+                assert getattr(target_item, attr) == value
 
 class TestDeleteItem:
     test_item_id = None

@@ -1,8 +1,10 @@
+from fastapi.exceptions import HTTPException
+from starlette.status import HTTP_400_BAD_REQUEST
 from app.api.routes import items
 from app.db.metadata import Item, User
 from app.db.repositories.base import BaseRepository
 from app.models import item
-from app.models.item import ItemCreate
+from app.models.item import ItemCreate, ItemUpdate
 
 
 class ItemRepository(BaseRepository):
@@ -45,3 +47,33 @@ class ItemRepository(BaseRepository):
         self.db.delete(target_item)
         self.db.commit()
         return deleted_id
+
+    def update_item(self,*, id:int, item_update: ItemUpdate):
+        target_item = self.get_item_by_id(id=id)
+        if not target_item:
+            return None
+        
+        update_performed = False
+
+        for var,value in vars(item_update).items():
+            if value or str(value) == 'False':
+                setattr(target_item, var, value)
+                update_performed = True
+
+        if update_performed == False:
+            raise HTTPException(
+                status_code=HTTP_400_BAD_REQUEST,
+                detail="No valid update parameters. No update performed",
+            )
+
+        try:
+            self.db.add(target_item)
+            self.db.commit()
+            self.db.refresh(target_item)
+            return target_item
+        except Exception as e:
+            print(e)
+            raise HTTPException(
+                status_code=HTTP_400_BAD_REQUEST, 
+                detail="Invalid update params.",                
+            )

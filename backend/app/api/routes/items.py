@@ -65,3 +65,17 @@ def get_all_products(
     all_items = item_repo.get_all_items()
     return [ItemPublic.from_orm(l) for l in all_items]
 
+@router.delete("/{id}/", response_model=int, name="items:delete-item-by-id")
+def delete_item_by_id(
+    id: int = Path(..., ge=1, title="The ID of the item to delete."),
+    current_user: UserInDB = Depends(get_current_active_user),
+    item_repo: ItemRepository = Depends(get_repository(ItemRepository)),
+):
+    target_item = item_repo.get_item_by_id(id=id)
+
+    if current_user.id != target_item.user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Cannot delete products for other users")
+    deleted_id = item_repo.delete_item_by_id(id=id)
+    return deleted_id
+
+

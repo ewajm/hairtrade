@@ -35,3 +35,13 @@ class ItemRepository(BaseRepository):
 
     def get_all_items(self):
         return self.db.query(Item).all()
+
+    def delete_item_by_id(self,*,id:int):
+        target_item = self.get_item_by_id(id = id)
+        if not target_item:
+            return None
+
+        deleted_id = target_item.id
+        self.db.delete(target_item)
+        self.db.commit()
+        return deleted_id

@@ -70,14 +70,11 @@ def update_item_by_id(
     current_user: UserInDB = Depends(get_current_active_user),
     item_repo: ItemRepository = Depends(get_repository(ItemRepository))
 ) -> ItemPublic:
-    target_item = item_repo.get_item_by_id(id=id)
-    if not target_item:
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="no item found with that id.")
-    if current_user.id != target_item.user_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Cannot delete products for other users")
-    
-    updated_item = item_repo.update_item(id=id, item_update=item_update)
    
+    updated_item = item_repo.update_item(id=id, item_update=item_update, requesting_user_id=current_user.id)
+    if not updated_item:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="no item found with that id.")
+
     return ItemPublic.from_orm(updated_item)
 
 
@@ -87,11 +84,7 @@ def delete_item_by_id(
     current_user: UserInDB = Depends(get_current_active_user),
     item_repo: ItemRepository = Depends(get_repository(ItemRepository)),
 ):
-    target_item = item_repo.get_item_by_id(id=id)
-
-    if current_user.id != target_item.user_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Cannot delete products for other users")
-    deleted_id = item_repo.delete_item_by_id(id=id)
+    deleted_id = item_repo.delete_item_by_id(id=id, requesting_user_id=current_user.id)
     return deleted_id
 
 

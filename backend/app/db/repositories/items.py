@@ -1,10 +1,12 @@
 from fastapi.exceptions import HTTPException
+from starlette import status
 from starlette.status import HTTP_400_BAD_REQUEST
 from app.api.routes import items
 from app.db.metadata import Item, User
 from app.db.repositories.base import BaseRepository
 from app.models import item
 from app.models.item import ItemCreate, ItemUpdate
+from app.models.user import UserInDB
 
 
 class ItemRepository(BaseRepository):
@@ -44,21 +46,33 @@ class ItemRepository(BaseRepository):
     def get_all_items(self):
         return self.db.query(Item).all()
 
-    def delete_item_by_id(self,*,id:int):
+    def delete_item_by_id(self,*,id:int, requesting_user_id:UserInDB):
         target_item = self.get_item_by_id(id = id)
         if not target_item:
             return None
+
+        if target_item.user_id != requesting_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail = "Users can only delete products they created."
+            )
 
         deleted_id = target_item.id
         self.db.delete(target_item)
         self.db.commit()
         return deleted_id
 
-    def update_item(self,*, id:int, item_update: ItemUpdate):
+    def update_item(self,*, id:int, item_update: ItemUpdate, requesting_user_id:int):
         target_item = self.get_item_by_id(id=id)
         if not target_item:
             return None
         
+        if requesting_user_id != target_item.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Users are only able to udpate items that they created"
+            )
+
         update_performed = False
 
         for var,value in vars(item_update).items():

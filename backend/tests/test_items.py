@@ -260,6 +260,22 @@ class TestUpdateItem:
         )
         assert res.status_code == status_code
 
+    async def test_item_cannot_be_updated_if_not_logged_in(self, app:FastAPI, client: AsyncClient, test_item:ItemInDB)-> None:
+        res = await client.put(app.url_path_for("items:update-item-by-id", id=test_item.id), json={"item_update": {"price": 99.99}})
+        assert res.status_code == HTTP_401_UNAUTHORIZED
+      
+    async def test_user_cannot_update_other_users_item(
+        self,
+        app:FastAPI,
+        authorized_client:AsyncClient,
+        test_item2:Item,
+    ) -> None:
+        res = await authorized_client.put(
+            app.url_path_for("items:update-item-by-id", id=test_item2.id),
+            json={"item_update": {"price": 99.99}},
+        )
+        assert res.status_code == status.HTTP_403_FORBIDDEN
+
 class TestDeleteItem:
     async def test_item_can_be_deleted(self, app:FastAPI, authorized_client: AsyncClient, test_item:ItemInDB)-> None:
         res = await authorized_client.delete(app.url_path_for("items:delete-item-by-id", id=test_item.id))
@@ -294,6 +310,6 @@ class TestDeleteItem:
 
     async def test_authenticated_users_cannot_delete_items_for_other_users(self, app: FastAPI, authorized_client: AsyncClient, test_item2:ItemInDB) -> None:
         res = await authorized_client.delete(app.url_path_for("items:delete-item-by-id", id=test_item2.id))
-        assert res.status_code == status.HTTP_401_UNAUTHORIZED
-        assert res.json() == {"detail": "Cannot delete products for other users"}
+        assert res.status_code == status.HTTP_403_FORBIDDEN
+        assert res.json() == {"detail": "Users can only delete products they created."}
         self.test_item_id = None

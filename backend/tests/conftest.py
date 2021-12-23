@@ -16,11 +16,12 @@ from sqlalchemy.orm import close_all_sessions
 from app.core.config import DATABASE_URL, SECRET_KEY, JWT_TOKEN_PREFIX
 from app import settings
 
+
 settings.init()
 settings.db_url = f"{DATABASE_URL}_test"
 
 from app.services import auth_service
-
+from app.models.item import ItemCreate, Size, WhatDo
 from app.db.repositories.products import ProductsRepository
 from app.db.repositories.users import UsersRepository
 from app.models.product import ProductCreate, ProductInDB, ProductType
@@ -119,3 +120,5 @@ async def test_user2(db: session.Session):
     if existing_user:
         return existing_user
     return user_repo.register_new_user(new_user=new_user)
+
+    

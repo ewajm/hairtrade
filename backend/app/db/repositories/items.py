@@ -35,6 +35,12 @@ class ItemRepository(BaseRepository):
 
         return items
 
+    def get_items_product_id_and_user_id(self, *, product_id:int, user_id:int):
+        items = self.db.query(Item).filter(Item.product_id==product_id, Item.user_id == user_id).all()
+        if not items:
+            return None
+        return items
+
     def get_all_items(self):
         return self.db.query(Item).all()
 

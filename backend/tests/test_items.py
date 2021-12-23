@@ -15,6 +15,49 @@ from app.models.item import ItemInDB, ItemPublic, ItemPublicByProduct, ItemPubli
 
 pytestmark = pytest.mark.asyncio
 
+
+@pytest.fixture
+async def test_item(test_user:UserInDB, test_product:ProductInDB, db:session.Session):
+    new_item = ItemCreate(
+        user_id = test_user.id,
+        product_id = test_product.id,
+        what_do = WhatDo.trade,
+        comment = "didn't like smell",
+        size = Size.travel
+    )
+    existing_item = db.query(Item).filter(
+        Item.user_id == test_user.id, 
+        Item.product_id == test_product.id,
+        Item.what_do == "trade",
+        Item.comment == "didn't like smell",
+        Item.size == "travel",
+    ).first()
+    if existing_item:
+        return existing_item
+    item_repo = ItemRepository(db)
+    return item_repo.create_item(item_create= new_item)
+
+@pytest.fixture
+async def test_item2(test_user2:UserInDB, test_product:ProductInDB, db:session.Session):
+    new_item = ItemCreate(
+        user_id = test_user2.id,
+        product_id = test_product.id,
+        what_do = WhatDo.giveaway,
+        comment = "doesn't work for me",
+        size = Size.jumbo
+    )
+    existing_item = db.query(Item).filter(
+        Item.user_id == test_user2.id, 
+        Item.product_id == test_product.id,
+        Item.what_do == "give away",
+        Item.comment == "doesn't work for me",
+        Item.size == "jumbo",
+    ).first()
+    if existing_item:
+        return existing_item
+    item_repo = ItemRepository(db)
+    return item_repo.create_item(item_create= new_item)
+
 class TestCreateItem:
     async def test_logged_in_users_can_create_item(self, app: FastAPI, authorized_client: AsyncClient, test_user: UserInDB, test_product:ProductInDB) -> None:
         new_item = ItemCreate(
@@ -54,30 +97,13 @@ class TestCreateItem:
         assert res.json() == {"detail": "Cannot create products for other users"}
 
 class TestGetItem:
-    test_item_id = None
-
-    def get_item(self, *, user:UserInDB, product:ProductInDB, db:session.Session) -> ItemPublic:
-        item_repo = ItemRepository(db)
-        if(self.test_item_id):
-            return item_repo.get_item_by_id(id = self.test_item_id)
-        new_item = ItemCreate(
-            user_id = user.id,
-            product_id = product.id,
-            what_do = "trade",
-        )
-        created_item = item_repo.create_item(item_create = new_item)
-        self.test_item_id = created_item.id
-        return created_item
-
-    
-    async def test_item_can_be_retrieved_by_id(self, app:FastAPI, client: AsyncClient, test_user:UserInDB, test_product:ProductInDB, db:session.Session)-> None:
-        nu_item = ItemPublic.from_orm(self.get_item(user=test_user, product=test_product, db=db))
-        res = await client.get(app.url_path_for("items:get-item-by-id", id=nu_item.id))
+   
+    async def test_item_can_be_retrieved_by_id(self, app:FastAPI, client: AsyncClient, test_item:ItemInDB)-> None:
+        res = await client.get(app.url_path_for("items:get-item-by-id", id=test_item.id))
         returned_item = ItemPublic(**res.json())
-        assert nu_item == returned_item
+        assert ItemPublic.from_orm(test_item) == returned_item
 
-    async def test_items_can_be_retrieved_by_user(self, app:FastAPI, client: AsyncClient, test_user:UserInDB, test_product: ProductInDB, db:session.Session) -> None:
-        nu_item = ItemPublicByUser.from_orm(self.get_item(user=test_user, product=test_product, db=db))
+    async def test_items_can_be_retrieved_by_user(self, app:FastAPI, client: AsyncClient,test_item:ItemInDB, test_user:UserInDB, test_product: ProductInDB, db:session.Session) -> None:
         nu_item_create2 = ItemCreate(
             user_id = test_user.id,
             product_id = test_product.id,
@@ -88,11 +114,10 @@ class TestGetItem:
         nu_item1 = ItemPublicByUser.from_orm(item_repo.create_item(item_create = nu_item_create2)) 
         res = await client.get(app.url_path_for("items:get-items-by-user", user_id = test_user.id))
         items = [ItemPublicByUser(**l) for l in res.json()] 
-        assert nu_item in items
+        assert ItemPublicByUser.from_orm(test_item) in items
         assert nu_item1 in items    
 
-    async def test_items_can_be_retrieved_by_product(self, app:FastAPI, client: AsyncClient, test_user:UserInDB, test_product: ProductInDB, db:session.Session) -> None:
-        nu_item = ItemPublicByProduct.from_orm(self.get_item(user=test_user, product=test_product, db=db))
+    async def test_items_can_be_retrieved_by_product(self, app:FastAPI, client: AsyncClient, test_item:ItemInDB, test_user:UserInDB, test_product: ProductInDB, db:session.Session) -> None:
         nu_item_create2 = ItemCreate(
             user_id = test_user.id,
             product_id = test_product.id,
@@ -103,33 +128,16 @@ class TestGetItem:
         nu_item1 = ItemPublicByProduct.from_orm(item_repo.create_item(item_create = nu_item_create2)) 
         res = await client.get(app.url_path_for("items:get-items-by-product", product_id = test_product.id))
         items = [ItemPublicByProduct(**l) for l in res.json()] 
-        assert nu_item in items
+        assert ItemPublicByProduct.from_orm(test_item) in items
         assert nu_item1 in items    
 
-    async def test_all_items_can_be_retrieved(self, app:FastAPI, client:AsyncClient, db:session.Session) -> None:
+    async def test_all_items_can_be_retrieved(self, app:FastAPI, client:AsyncClient) -> None:
         res = await client.get(app.url_path_for("items:get-all-items"))
         assert res.status_code == HTTP_200_OK
         assert isinstance(res.json(), list)
         assert len(res.json()) > 0
 
 class TestUpdateItem:
-    test_item_id = None
-
-    def get_item(self, *, user:UserInDB, product:ProductInDB, db:session.Session) -> ItemPublic:
-        item_repo = ItemRepository(db)
-        if(self.test_item_id):
-            return item_repo.get_item_by_id(id = self.test_item_id)
-        new_item = ItemCreate(
-            user_id = user.id,
-            product_id = product.id,
-            what_do = "trade",
-            size = "regular",
-            comment = "didn't like smell"
-        )
-        created_item = item_repo.create_item(item_create = new_item)
-        self.test_item_id = created_item.id
-        return created_item
-
     @pytest.mark.parametrize(
         "attrs_to_change, values",
         (
@@ -149,9 +157,7 @@ class TestUpdateItem:
         self,
         app:FastAPI,
         authorized_client: AsyncClient,
-        test_user: UserInDB,
-        test_product: ProductInDB,
-        db:session.Session,
+        test_item: Item,
         attrs_to_change: List[str],
         values: List[str],
     ) -> None:
@@ -160,66 +166,50 @@ class TestUpdateItem:
                 attrs_to_change[i]: values[i] for i in range(len(attrs_to_change))
             }
         }
-        target = self.get_item(user = test_user, product = test_product, db=db)
         res = await authorized_client.put(
             app.url_path_for(
                 "items:update-item-by-id",
-                id=target.id,
+                id=test_item.id,
             ),
             json = item_update
         )
         assert res.status_code == HTTP_200_OK
         updated_item = ItemPublic(**res.json())
-        assert updated_item.id == target.id  # make sure it's the same cleaning
+        assert updated_item.id == test_item.id  # make sure it's the same cleaning
         # make sure that any attribute we updated has changed to the correct value
+        target_item = ItemPublic.from_orm(test_item)
+        print(updated_item)
+        print(target_item)
         for i in range(len(attrs_to_change)):
             attr_to_change = getattr(updated_item, attrs_to_change[i])
-            assert attr_to_change != getattr(target, attrs_to_change[i])
+            assert attr_to_change != getattr(test_item, attrs_to_change[i])
             assert attr_to_change == values[i] 
         # make sure that no other attributes' values have changed
-        target_item = ItemPublic.from_orm(target)
+        
         for attr, value in updated_item.dict().items():
             if attr not in attrs_to_change and attr != "updated_at":
                 assert getattr(target_item, attr) == value
 
 class TestDeleteItem:
-    test_item_id = None
-
-    def get_item(self, *, user:UserInDB, product:ProductInDB, db:session.Session) -> ItemPublic:
-        item_repo = ItemRepository(db)
-        if(self.test_item_id):
-            return item_repo.get_item_by_id(id = self.test_item_id)
-        new_item = ItemCreate(
-            user_id = user.id,
-            product_id = product.id,
-            what_do = "trade",
-        )
-        created_item = item_repo.create_item(item_create = new_item)
-        self.test_item_id = created_item.id
-        return created_item
-
-    async def test_item_can_be_deleted(self, app:FastAPI, authorized_client: AsyncClient, test_user:UserInDB, test_product:ProductInDB, db:session.Session)-> None:
-        target_item = ItemPublic.from_orm(self.get_item(user=test_user, product=test_product, db=db))
-        res = await authorized_client.delete(app.url_path_for("items:delete-item-by-id", id=target_item.id))
+    async def test_item_can_be_deleted(self, app:FastAPI, authorized_client: AsyncClient, test_item:ItemInDB)-> None:
+        res = await authorized_client.delete(app.url_path_for("items:delete-item-by-id", id=test_item.id))
         assert res.status_code == HTTP_200_OK
         # ensure that the item no longer exists
         res = await authorized_client.get(
             app.url_path_for(
                 "items:get-item-by-id", 
-                id=target_item.id,
+                id=test_item.id,
             ),
         )
         assert res.status_code == HTTP_404_NOT_FOUND
 
-    async def test_item_cannot_be_deleted_if_not_logged_in(self, app:FastAPI, client: AsyncClient, test_user:UserInDB, test_product:ProductInDB, db:session.Session)-> None:
-        target_item = ItemPublic.from_orm(self.get_item(user=test_user, product=test_product, db=db))
-        res = await client.delete(app.url_path_for("items:delete-item-by-id", id=target_item.id))
+    async def test_item_cannot_be_deleted_if_not_logged_in(self, app:FastAPI, client: AsyncClient, test_item:ItemInDB)-> None:
+        res = await client.delete(app.url_path_for("items:delete-item-by-id", id=test_item.id))
         assert res.status_code == HTTP_401_UNAUTHORIZED
         self.test_item_id = None
 
-    async def test_authenticated_users_cannot_delete_items_for_other_users(self, app: FastAPI, authorized_client: AsyncClient, test_user:UserInDB, test_user2: UserInDB, test_product:ProductInDB, db:session.Session) -> None:
-        target_item = ItemPublic.from_orm(self.get_item(user=test_user2, product=test_product, db=db))
-        res = await authorized_client.delete(app.url_path_for("items:delete-item-by-id", id=target_item.id))
+    async def test_authenticated_users_cannot_delete_items_for_other_users(self, app: FastAPI, authorized_client: AsyncClient, test_item2:ItemInDB) -> None:
+        res = await authorized_client.delete(app.url_path_for("items:delete-item-by-id", id=test_item2.id))
         assert res.status_code == status.HTTP_401_UNAUTHORIZED
         assert res.json() == {"detail": "Cannot delete products for other users"}
         self.test_item_id = None

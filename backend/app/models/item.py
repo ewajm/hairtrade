@@ -27,10 +27,10 @@ class ItemCreate(ItemBase):
     what_do:WhatDo = "trade"
 
 class ItemUpdate(ItemBase):
-    pass
+    size: Optional[Size]
+    what_do: Optional[WhatDo]
 
-class ItemInDB(ItemBase, IDModelMixin, DateTimeModelMixin):
-    id: int
+class ItemInDB(DateTimeModelMixin, IDModelMixin, ItemBase):
     user_id: int
     product_id: int
 

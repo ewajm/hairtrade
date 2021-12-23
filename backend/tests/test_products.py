@@ -49,8 +49,8 @@ class TestCreateProduct:
             (None, 422),
             ({}, 422),
             ({"product_name": "test_name"}, 422),
-            ({"product_name:": "test_name", "description": "test"}, 422),
-            ({"product_name:": "test_name", "type": ProductType.dunno}, 422),
+            ({"product_name": "test_name", "description": "test"}, 422),
+            ({"brand": "cool brand","type": "idk, a bottle"}, 422),
             ({"description:": "test_name", "type": ProductType.dunno}, 422),
         ),
     )

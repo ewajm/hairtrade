@@ -8,7 +8,7 @@ from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_401_UNAUTHORIZE
 from app.api.routes.products import create_new_product
 from app.db.metadata import Item
 from app.db.repositories.items import ItemRepository
-from app.models.product import ProductInDB
+from app.models.product import ProductInDB, ProductType
 
 from app.models.user import UserInDB
 from app.models.item import ItemInDB, ItemPublic, ItemPublicByProduct, ItemPublicByUser, Size, ItemCreate, WhatDo
@@ -96,12 +96,46 @@ class TestCreateItem:
         assert res.status_code == status.HTTP_401_UNAUTHORIZED
         assert res.json() == {"detail": "Cannot create products for other users"}
 
+    @pytest.mark.parametrize(
+        "invalid_payload, status_code",
+        (
+            (None, 422),
+            ({}, 422),
+            ({"user_id": 1}, 422),
+            ({"user_id": 1, "what_do": "trade"}, 422),
+            ({"product_id": 1, "comment": "test"}, 422),
+            ({"size": "jumbo", "what_do": "trade", "comment": "test"}, 422),
+            ({"comment": "test", "size": "jumbo", "price": 400}, 422),
+        ),
+    )
+    async def test_invalid_input_raises_error(
+        self, app:FastAPI, authorized_client: AsyncClient, invalid_payload:dict,status_code:int
+    ) -> None:
+        res = await authorized_client.post(
+            app.url_path_for("items:create-item"),json={"new_item":invalid_payload}
+        )
+        assert res.status_code == status_code
+
 class TestGetItem:
    
     async def test_item_can_be_retrieved_by_id(self, app:FastAPI, client: AsyncClient, test_item:ItemInDB)-> None:
         res = await client.get(app.url_path_for("items:get-item-by-id", id=test_item.id))
         returned_item = ItemPublic(**res.json())
         assert ItemPublic.from_orm(test_item) == returned_item
+
+    @pytest.mark.parametrize(
+        "id, status_code",
+        (
+            (999,404),
+            (-1, 422),
+            (None, 422),
+        )
+    )
+    async def test_wrong_id_returns_error(
+        self, app:FastAPI, client:AsyncClient, id:int, status_code:int
+    ) -> None:
+        res = await client.get(app.url_path_for("items:get-item-by-id", id=id))
+        assert res.status_code == status_code
 
     async def test_items_can_be_retrieved_by_user(self, app:FastAPI, client: AsyncClient,test_item:ItemInDB, test_user:UserInDB, test_product: ProductInDB, db:session.Session) -> None:
         nu_item_create2 = ItemCreate(
@@ -115,7 +149,21 @@ class TestGetItem:
         res = await client.get(app.url_path_for("items:get-items-by-user", user_id = test_user.id))
         items = [ItemPublicByUser(**l) for l in res.json()] 
         assert ItemPublicByUser.from_orm(test_item) in items
-        assert nu_item1 in items    
+        assert nu_item1 in items   
+
+    @pytest.mark.parametrize(
+        "user_id, status_code",
+        (
+            (999,404),
+            (-1, 422),
+            (None, 422),
+        )
+    )
+    async def test_wrong_user_id_returns_error(
+        self, app:FastAPI, client:AsyncClient, user_id:int, status_code:int
+    ) -> None:
+        res = await client.get(app.url_path_for("items:get-items-by-user", user_id=user_id))
+        assert res.status_code == status_code
 
     async def test_items_can_be_retrieved_by_product(self, app:FastAPI, client: AsyncClient, test_item:ItemInDB, test_user:UserInDB, test_product: ProductInDB, db:session.Session) -> None:
         nu_item_create2 = ItemCreate(
@@ -129,7 +177,21 @@ class TestGetItem:
         res = await client.get(app.url_path_for("items:get-items-by-product", product_id = test_product.id))
         items = [ItemPublicByProduct(**l) for l in res.json()] 
         assert ItemPublicByProduct.from_orm(test_item) in items
-        assert nu_item1 in items    
+        assert nu_item1 in items   
+
+    @pytest.mark.parametrize(
+        "product_id, status_code",
+        (
+            (999,404),
+            (-1, 422),
+            (None, 422),
+        )
+    )
+    async def test_wrong_product_id_returns_error(
+        self, app:FastAPI, client:AsyncClient, product_id:int, status_code:int
+    ) -> None:
+        res = await client.get(app.url_path_for("items:get-items-by-product", product_id=product_id))
+        assert res.status_code == status_code
 
     async def test_all_items_can_be_retrieved(self, app:FastAPI, client:AsyncClient) -> None:
         res = await client.get(app.url_path_for("items:get-all-items"))
@@ -190,6 +252,32 @@ class TestUpdateItem:
             if attr not in attrs_to_change and attr != "updated_at":
                 assert getattr(target_item, attr) == value
 
+    @pytest.mark.parametrize(
+        "id, payload, status_code",
+        (
+            (-1, {"comment": "test"}, 422),
+            (0, {"comment": "test2"}, 422),
+            (500, {"comment": "test3"}, 404),
+            (1, None, 422),
+            (1, {"what_do": "invalid what_do"}, 422),
+            (1, {"size": None}, 400),
+        ),
+    )
+    async def test_update_item_with_invalid_input_throws_error(
+        self,
+        app: FastAPI,
+        authorized_client: AsyncClient,
+        id: int,
+        payload: dict,
+        status_code: int,
+    ) -> None:
+        item_update = {"item_update": payload}
+        res = await authorized_client.put(
+            app.url_path_for("items:update-item-by-id", id=id),
+            json=item_update
+        )
+        assert res.status_code == status_code
+
 class TestDeleteItem:
     async def test_item_can_be_deleted(self, app:FastAPI, authorized_client: AsyncClient, test_item:ItemInDB)-> None:
         res = await authorized_client.delete(app.url_path_for("items:delete-item-by-id", id=test_item.id))
@@ -202,6 +290,20 @@ class TestDeleteItem:
             ),
         )
         assert res.status_code == HTTP_404_NOT_FOUND
+
+    @pytest.mark.parametrize(
+        "id, status_code",
+        (
+            (999,404),
+            (-1, 422),
+            (None, 422),
+        )
+    )
+    async def test_wrong_id_returns_error(
+        self, app:FastAPI, client:AsyncClient, id:int, status_code:int
+    ) -> None:
+        res = await client.get(app.url_path_for("items:delete-item-by-id", id=id))
+        assert res.status_code == status_code
 
     async def test_item_cannot_be_deleted_if_not_logged_in(self, app:FastAPI, client: AsyncClient, test_item:ItemInDB)-> None:
         res = await client.delete(app.url_path_for("items:delete-item-by-id", id=test_item.id))

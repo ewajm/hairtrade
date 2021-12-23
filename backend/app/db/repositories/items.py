@@ -8,8 +8,8 @@ from app.models.item import ItemCreate, ItemUpdate
 
 
 class ItemRepository(BaseRepository):
-    def create_item(self, *, item_create: ItemCreate):
-        created_item = Item(**item_create.dict())
+    def create_item(self, *, item_create: ItemCreate, user_id:int):
+        created_item = Item(**item_create.dict(), user_id=user_id)
         self.db.add(created_item)
         self.db.commit()
         self.db.refresh(created_item)

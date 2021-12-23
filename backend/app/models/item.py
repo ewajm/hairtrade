@@ -22,7 +22,6 @@ class ItemBase(CoreModel):
     price: Optional[float]
 
 class ItemCreate(ItemBase):
-    user_id: int
     product_id: int
     what_do:WhatDo = "trade"
 

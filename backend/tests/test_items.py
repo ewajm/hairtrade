@@ -19,7 +19,6 @@ pytestmark = pytest.mark.asyncio
 @pytest.fixture
 async def test_item(test_user:UserInDB, test_product:ProductInDB, db:session.Session):
     new_item = ItemCreate(
-        user_id = test_user.id,
         product_id = test_product.id,
         what_do = WhatDo.trade,
         comment = "didn't like smell",
@@ -35,12 +34,11 @@ async def test_item(test_user:UserInDB, test_product:ProductInDB, db:session.Ses
     if existing_item:
         return existing_item
     item_repo = ItemRepository(db)
-    return item_repo.create_item(item_create= new_item)
+    return item_repo.create_item(item_create= new_item, user_id=test_user.id)
 
 @pytest.fixture
 async def test_item2(test_user2:UserInDB, test_product:ProductInDB, db:session.Session):
     new_item = ItemCreate(
-        user_id = test_user2.id,
         product_id = test_product.id,
         what_do = WhatDo.giveaway,
         comment = "doesn't work for me",
@@ -56,7 +54,7 @@ async def test_item2(test_user2:UserInDB, test_product:ProductInDB, db:session.S
     if existing_item:
         return existing_item
     item_repo = ItemRepository(db)
-    return item_repo.create_item(item_create= new_item)
+    return item_repo.create_item(item_create= new_item, user_id = test_user2.id)
 
 class TestCreateItem:
     async def test_logged_in_users_can_create_item(self, app: FastAPI, authorized_client: AsyncClient, test_user: UserInDB, test_product:ProductInDB) -> None:
@@ -84,26 +82,12 @@ class TestCreateItem:
         )
         assert res.status_code == status.HTTP_401_UNAUTHORIZED
 
-    async def test_authenticated_users_cannot_create_items_for_other_users(self, app: FastAPI, authorized_client: AsyncClient, test_user:UserInDB, test_user2: UserInDB, test_product:ProductInDB) -> None:
-        new_item = ItemCreate(
-            user_id = test_user2.id,
-            product_id = test_product.id,
-            what_do = "trade",
-        )
-        res = await authorized_client.post(
-            app.url_path_for("items:create-item"), json={"new_item":new_item.dict()}
-        )
-        assert res.status_code == status.HTTP_401_UNAUTHORIZED
-        assert res.json() == {"detail": "Cannot create products for other users"}
-
     @pytest.mark.parametrize(
         "invalid_payload, status_code",
         (
             (None, 422),
             ({}, 422),
-            ({"user_id": 1}, 422),
-            ({"user_id": 1, "what_do": "trade"}, 422),
-            ({"product_id": 1, "comment": "test"}, 422),
+            ({"what_do": "trade"}, 422),
             ({"size": "jumbo", "what_do": "trade", "comment": "test"}, 422),
             ({"comment": "test", "size": "jumbo", "price": 400}, 422),
         ),
@@ -139,13 +123,12 @@ class TestGetItem:
 
     async def test_items_can_be_retrieved_by_user(self, app:FastAPI, client: AsyncClient,test_item:ItemInDB, test_user:UserInDB, test_product: ProductInDB, db:session.Session) -> None:
         nu_item_create2 = ItemCreate(
-            user_id = test_user.id,
             product_id = test_product.id,
             what_do = WhatDo.giveaway,
             size = Size.sample
         )
         item_repo = ItemRepository(db)
-        nu_item1 = ItemPublicByUser.from_orm(item_repo.create_item(item_create = nu_item_create2)) 
+        nu_item1 = ItemPublicByUser.from_orm(item_repo.create_item(item_create = nu_item_create2, user_id = test_user.id)) 
         res = await client.get(app.url_path_for("items:get-items-by-user", user_id = test_user.id))
         items = [ItemPublicByUser(**l) for l in res.json()] 
         assert ItemPublicByUser.from_orm(test_item) in items
@@ -167,13 +150,12 @@ class TestGetItem:
 
     async def test_items_can_be_retrieved_by_product(self, app:FastAPI, client: AsyncClient, test_item:ItemInDB, test_user:UserInDB, test_product: ProductInDB, db:session.Session) -> None:
         nu_item_create2 = ItemCreate(
-            user_id = test_user.id,
             product_id = test_product.id,
             what_do = WhatDo.giveaway,
             size = Size.sample
         )
         item_repo = ItemRepository(db)
-        nu_item1 = ItemPublicByProduct.from_orm(item_repo.create_item(item_create = nu_item_create2)) 
+        nu_item1 = ItemPublicByProduct.from_orm(item_repo.create_item(item_create = nu_item_create2, user_id = test_user.id)) 
         res = await client.get(app.url_path_for("items:get-items-by-product", product_id = test_product.id))
         items = [ItemPublicByProduct(**l) for l in res.json()] 
         assert ItemPublicByProduct.from_orm(test_item) in items

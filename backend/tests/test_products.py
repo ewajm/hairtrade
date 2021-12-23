@@ -3,10 +3,11 @@ from typing import List
 import pytest
 from httpx import AsyncClient
 from fastapi import FastAPI
+from starlette import status
 
 from starlette.status  import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_422_UNPROCESSABLE_ENTITY, HTTP_201_CREATED
 
-from app.models.product import ProductCreate
+from app.models.product import ProductCreate, ProductInDB
 from app.models.product import ProductType
 from app.models.product import ProductPublic
 from app.db.metadata import Product  
@@ -23,25 +24,41 @@ def new_product():
     )
 
 class TestProductsRoutes:
-    async def test_routes_exist(self, app: FastAPI, client: AsyncClient) -> None:
+    async def test_routes_exist(self, app: FastAPI, client: AsyncClient, test_product:ProductInDB) -> None:
         res = await client.post(app.url_path_for("products:create-product"), json={})
-        assert res.status_code != HTTP_404_NOT_FOUND
+        assert res.status_code != status.HTTP_404_NOT_FOUND
+        res = await client.get(app.url_path_for("products:get-product-by-id",id=test_product.id))
+        assert res.status_code != status.HTTP_404_NOT_FOUND
+        res = await client.get(app.url_path_for("products:get-all-products"))
+        assert res.status_code != status.HTTP_404_NOT_FOUND
+        res = await client.put(app.url_path_for("products:update-product-by-id", id=1))
+        assert res.status_code != status.HTTP_404_NOT_FOUND
+        res = await client.delete(app.url_path_for("products:delete-product-by-id", id=0))
+        assert res.status_code != status.HTTP_404_NOT_FOUND
 
-    async def test_invalid_input_raises_errors(self, app: FastAPI, client: AsyncClient) -> None:
-        res = await client.post(app.url_path_for("products:create-product"), json={})
+    async def test_invalid_input_raises_errors(self, app: FastAPI, authorized_client: AsyncClient) -> None:
+        res = await authorized_client.post(app.url_path_for("products:create-product"), json={})
         assert res.status_code == HTTP_422_UNPROCESSABLE_ENTITY
 
 class TestCreateProduct:
-    async def test_valid_input_creates_cleaning(
-        self, app:FastAPI, client:AsyncClient, new_product: ProductCreate
+    async def test_valid_input_creates_product(
+        self, app:FastAPI, authorized_client:AsyncClient, new_product: ProductCreate
     ) -> None:
-        res = await client.post(
+        res = await authorized_client.post(
             app.url_path_for("products:create-product"),json={"new_product":new_product.dict()}
         )
         assert res.status_code == HTTP_201_CREATED
 
         created_product = ProductCreate(**res.json())
         assert created_product == new_product
+
+    async def test_unauthorized_user_unable_to_create_product(
+        self, app: FastAPI, client: AsyncClient, new_product: ProductCreate
+    ) -> None:
+        res = await client.post(
+            app.url_path_for("products:create-product"), json={"new_product": new_product.dict()}
+        )
+        assert res.status_code == status.HTTP_401_UNAUTHORIZED
 
     @pytest.mark.parametrize(
         "invalid_payload, status_code",
@@ -55,9 +72,9 @@ class TestCreateProduct:
         ),
     )
     async def test_invalid_input_raises_error(
-        self, app:FastAPI, client: AsyncClient, invalid_payload:dict,status_code:int
+        self, app:FastAPI, authorized_client: AsyncClient, invalid_payload:dict,status_code:int
     ) -> None:
-        res = await client.post(
+        res = await authorized_client.post(
             app.url_path_for("products:create-product"),json={"new_product":invalid_payload}
         )
         assert res.status_code == status_code
@@ -114,7 +131,7 @@ class TestUpdateProduct:
     async def test_update_product_with_valid_input(
         self, 
         app: FastAPI, 
-        client: AsyncClient, 
+        authorized_client: AsyncClient, 
         test_product: Product, 
         attrs_to_change: List[str], 
         values: List[str],
@@ -124,7 +141,7 @@ class TestUpdateProduct:
                 attrs_to_change[i]: values[i] for i in range(len(attrs_to_change))
             }
         }
-        res = await client.put(
+        res = await authorized_client.put(
             app.url_path_for(
                 "products:update-product-by-id",
                 id=test_product.id,
@@ -133,7 +150,7 @@ class TestUpdateProduct:
         )
         assert res.status_code == HTTP_200_OK
         updated_product = ProductPublic(**res.json())
-        assert updated_product.id == test_product.id  # make sure it's the same cleaning
+        assert updated_product.id == test_product.id  # make sure it's the same product
         # make sure that any attribute we updated has changed to the correct value
         for i in range(len(attrs_to_change)):
             attr_to_change = getattr(updated_product, attrs_to_change[i])
@@ -144,6 +161,14 @@ class TestUpdateProduct:
         for attr, value in updated_product.dict().items():
             if attr not in attrs_to_change and attr != "updated_at":
                 assert getattr(test_product_obj, attr) == value
+
+    async def test_unauthorized_user_unable_to_update_product(
+        self, app: FastAPI, client: AsyncClient, test_product: ProductInDB
+    ) -> None:
+        res = await client.put(
+            app.url_path_for("products:update-product-by-id", id=test_product.id), json={"product_update": {"product_name": "test"}, }
+        )
+        assert res.status_code == status.HTTP_401_UNAUTHORIZED
 
     @pytest.mark.parametrize(
         "id, payload, status_code",
@@ -159,13 +184,13 @@ class TestUpdateProduct:
     async def test_update_product_with_invalid_input_throws_error(
         self,
         app: FastAPI,
-        client: AsyncClient,
+        authorized_client: AsyncClient,
         id: int,
         payload: dict,
         status_code: int,
     ) -> None:
         product_update = {"product_update": payload}
-        res = await client.put(
+        res = await authorized_client.put(
             app.url_path_for("products:update-product-by-id", id=id),
             json=product_update
         )
@@ -175,25 +200,33 @@ class TestDeleteProduct:
     async def test_can_delete_product_successfully(
         self,
         app: FastAPI,
-        client: AsyncClient,
+        authorized_client: AsyncClient,
         test_product: Product,
     ) -> None:
-        # delete the cleaning
-        res = await client.delete(
+        # delete the product
+        res = await authorized_client.delete(
             app.url_path_for(
                 "products:delete-product-by-id", 
                 id=test_product.id,
             ),
         )
         assert res.status_code == HTTP_200_OK
-        # ensure that the cleaning no longer exists
-        res = await client.get(
+        # ensure that the product no longer exists
+        res = await authorized_client.get(
             app.url_path_for(
                 "products:get-product-by-id", 
                 id=test_product.id,
             ),
         )
         assert res.status_code == HTTP_404_NOT_FOUND
+
+    async def test_unauthorized_user_unable_to_delete_product(
+        self, app: FastAPI, client: AsyncClient, test_product: ProductInDB
+    ) -> None:
+        res = await client.delete(
+            app.url_path_for("products:delete-product-by-id", id=test_product.id), 
+        )
+        assert res.status_code == status.HTTP_401_UNAUTHORIZED
 
     @pytest.mark.parametrize(
         "id, status_code",
@@ -204,14 +237,14 @@ class TestDeleteProduct:
             (None, 422),
         ),
     )
-    async def test_delete_cleaning_with_invalid_input_throws_error(
+    async def test_delete_product_with_invalid_input_throws_error(
         self,
         app: FastAPI,
-        client: AsyncClient,
+        authorized_client: AsyncClient,
         id: int,
         status_code: int,
     ) -> None:
-        res = await client.delete(
+        res = await authorized_client.delete(
             app.url_path_for("products:delete-product-by-id", id=id),
         )
         assert res.status_code == status_code  

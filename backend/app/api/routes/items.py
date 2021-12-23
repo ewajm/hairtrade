@@ -17,9 +17,7 @@ def create_new_item(
     current_user: UserInDB = Depends(get_current_active_user),
     item_repo: ItemRepository = Depends(get_repository(ItemRepository)),
 ) -> ItemPublicByUser:
-    if current_user.id != new_item.user_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Cannot create products for other users")
-    created_item = item_repo.create_item(item_create=new_item)
+    created_item = item_repo.create_item(item_create=new_item, user_id=current_user.id)
     return ItemPublicByUser.from_orm(created_item)    
 
 @router.get("/{id}/", response_model=ItemPublic, name = "items:get-item-by-id")

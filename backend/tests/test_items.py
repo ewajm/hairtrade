@@ -306,10 +306,7 @@ class TestDeleteItem:
     async def test_item_cannot_be_deleted_if_not_logged_in(self, app:FastAPI, client: AsyncClient, test_item:ItemInDB)-> None:
         res = await client.delete(app.url_path_for("items:delete-item-by-id", id=test_item.id))
         assert res.status_code == HTTP_401_UNAUTHORIZED
-        self.test_item_id = None
 
     async def test_authenticated_users_cannot_delete_items_for_other_users(self, app: FastAPI, authorized_client: AsyncClient, test_item2:ItemInDB) -> None:
         res = await authorized_client.delete(app.url_path_for("items:delete-item-by-id", id=test_item2.id))
         assert res.status_code == status.HTTP_403_FORBIDDEN
-        assert res.json() == {"detail": "Users can only delete products they created."}
-        self.test_item_id = None

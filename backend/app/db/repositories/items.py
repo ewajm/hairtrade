@@ -46,38 +46,18 @@ class ItemRepository(BaseRepository):
     def get_all_items(self):
         return self.db.query(Item).all()
 
-    def delete_item_by_id(self,*,id:int, requesting_user_id:UserInDB):
-        target_item = self.get_item_by_id(id = id)
-        if not target_item:
-            return None
-
-        if target_item.user_id != requesting_user_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail = "Users can only delete products they created."
-            )
-
-        deleted_id = target_item.id
-        self.db.delete(target_item)
+    def delete_item_by_id(self,*,item:Item):
+        deleted_id = item.id
+        self.db.delete(item)
         self.db.commit()
         return deleted_id
 
-    def update_item(self,*, id:int, item_update: ItemUpdate, requesting_user_id:int):
-        target_item = self.get_item_by_id(id=id)
-        if not target_item:
-            return None
-        
-        if requesting_user_id != target_item.user_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Users are only able to udpate items that they created"
-            )
-
+    def update_item(self,*, item:Item, item_update: ItemUpdate):
         update_performed = False
 
         for var,value in vars(item_update).items():
             if value or str(value) == 'False':
-                setattr(target_item, var, value)
+                setattr(item, var, value)
                 update_performed = True
 
         if update_performed == False:
@@ -87,10 +67,10 @@ class ItemRepository(BaseRepository):
             )
 
         try:
-            self.db.add(target_item)
+            self.db.add(item)
             self.db.commit()
-            self.db.refresh(target_item)
-            return target_item
+            self.db.refresh(item)
+            return item
         except Exception as e:
             print(e)
             raise HTTPException(

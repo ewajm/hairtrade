@@ -51,13 +51,11 @@ class UsersRepository(BaseRepository):
         self.db.refresh(created_user)
 
         self.profiles_repo.create_profile_for_user(profile_create=ProfileCreate(user_id=created_user.id))
-        print(str(created_user))
         return created_user
 
     def authenticate_user(self, *, email: EmailStr, password: str):
         # make user user exists in db
         user = self.get_user_by_email(email=email)
-        print(str(user))
         if not user:
             return None
         # if submitted password doesn't match

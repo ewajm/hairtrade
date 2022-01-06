@@ -15,6 +15,17 @@ class BaseColumn(object):
 
     def as_dict(self):
        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+class TimestampColumn(object):
+    @declared_attr
+    def __tablename__(cls):
+        return cls.__name__.lower()
+
+    created_at = Column('created_at', TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column('updated_at', TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.current_timestamp())
+
+    def as_dict(self):
+       return {c.name: getattr(self, c.name) for c in self.__table__.columns}
  
 class Product(BaseColumn, Base):
     product_name = Column(Text, nullable=False,index=True)
@@ -43,6 +54,10 @@ class User(BaseColumn, Base):
         cascade="all, delete",
         passive_deletes=True,
     )
+    items = relationship("Offer", back_populates="user",
+        cascade="all, delete",
+        passive_deletes=True,
+    )
 
 class Item(BaseColumn, Base):
     __tablename__='item'
@@ -55,6 +70,19 @@ class Item(BaseColumn, Base):
     price = Column(Numeric(10,2), nullable=True) 
     comment = Column(Text,nullable=True)
     size = Column(Text,nullable=True)
+    user_offers = relationship("Offer", back_populates="item",
+        cascade="all, delete",
+        passive_deletes=True,
+    )
+
+class Offer(TimestampColumn, Base):
+    user_id=Column(ForeignKey('user.id', ondelete="CASCADE"), primary_key=True)
+    item_id = Column(ForeignKey('item.id', ondelete="CASCADE"), primary_key=True)
+    status = Column(Text, nullable=False,server_default="pending", index=True)
+    user = relationship("User", back_populates="items")
+    item = relationship("Item", back_populates="user_offers")
+
+
 
 #TODO add hair specific stuff like curl type, porosity etc. 
 class Profile(BaseColumn, Base):

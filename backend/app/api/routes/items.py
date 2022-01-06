@@ -22,12 +22,12 @@ def create_new_item(
     created_item = item_repo.create_item(item_create=new_item, user_id=current_user.id)
     return ItemPublicByUser.from_orm(created_item)    
 
-@router.get("/{id}/", response_model=ItemPublic, name = "items:get-item-by-id")
+@router.get("/{item_id}/", response_model=ItemPublic, name = "items:get-item-by-id")
 def get_item_by_id(
-    id: int = Path(..., ge=1, title="The ID of the item to retrieve."),
+    item_id: int = Path(..., ge=1, title="The ID of the item to retrieve."),
     item_repo: ItemRepository = Depends(get_repository(ItemRepository))
 ) -> ItemPublic:
-    item = item_repo.get_item_by_id(id=id)
+    item = item_repo.get_item_by_id(id=item_id)
 
     if not item:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="no item found with that id.")
@@ -66,7 +66,7 @@ def get_all_products(
     return [ItemPublic.from_orm(l) for l in all_items]
 
 @router.put(
-    "/{id}/", 
+    "/{item_id}/", 
     response_model=ItemPublic, 
     name="items:update-item-by-id",
     dependencies=[Depends(check_item_modification_permissions)],
@@ -80,7 +80,7 @@ def update_item_by_id(
 
 
 @router.delete(
-    "/{id}/", 
+    "/{item_id}/", 
     response_model=int, 
     name="items:delete-item-by-id",
     dependencies=[Depends(check_item_modification_permissions)],

@@ -103,7 +103,7 @@ class TestCreateItem:
 class TestGetItem:
    
     async def test_item_can_be_retrieved_by_id(self, app:FastAPI, client: AsyncClient, test_item:ItemInDB)-> None:
-        res = await client.get(app.url_path_for("items:get-item-by-id", id=test_item.id))
+        res = await client.get(app.url_path_for("items:get-item-by-id", item_id=test_item.id))
         returned_item = ItemPublic(**res.json())
         assert ItemPublic.from_orm(test_item) == returned_item
 
@@ -118,7 +118,7 @@ class TestGetItem:
     async def test_wrong_id_returns_error(
         self, app:FastAPI, client:AsyncClient, id:int, status_code:int
     ) -> None:
-        res = await client.get(app.url_path_for("items:get-item-by-id", id=id))
+        res = await client.get(app.url_path_for("items:get-item-by-id", item_id=id))
         assert res.status_code == status_code
 
     async def test_items_can_be_retrieved_by_user(self, app:FastAPI, client: AsyncClient,test_item:ItemInDB, test_user:UserInDB, test_product: ProductInDB, db:session.Session) -> None:
@@ -213,7 +213,7 @@ class TestUpdateItem:
         res = await authorized_client.put(
             app.url_path_for(
                 "items:update-item-by-id",
-                id=test_item.id,
+                item_id=test_item.id,
             ),
             json = item_update
         )
@@ -255,13 +255,13 @@ class TestUpdateItem:
     ) -> None:
         item_update = {"item_update": payload}
         res = await authorized_client.put(
-            app.url_path_for("items:update-item-by-id", id=id),
+            app.url_path_for("items:update-item-by-id", item_id=id),
             json=item_update
         )
         assert res.status_code == status_code
 
     async def test_item_cannot_be_updated_if_not_logged_in(self, app:FastAPI, client: AsyncClient, test_item:ItemInDB)-> None:
-        res = await client.put(app.url_path_for("items:update-item-by-id", id=test_item.id), json={"item_update": {"price": 99.99}})
+        res = await client.put(app.url_path_for("items:update-item-by-id", item_id=test_item.id), json={"item_update": {"price": 99.99}})
         assert res.status_code == HTTP_401_UNAUTHORIZED
       
     async def test_user_cannot_update_other_users_item(
@@ -271,20 +271,20 @@ class TestUpdateItem:
         test_item2:Item,
     ) -> None:
         res = await authorized_client.put(
-            app.url_path_for("items:update-item-by-id", id=test_item2.id),
+            app.url_path_for("items:update-item-by-id", item_id=test_item2.id),
             json={"item_update": {"price": 99.99}},
         )
         assert res.status_code == status.HTTP_403_FORBIDDEN
 
 class TestDeleteItem:
     async def test_item_can_be_deleted(self, app:FastAPI, authorized_client: AsyncClient, test_item:ItemInDB)-> None:
-        res = await authorized_client.delete(app.url_path_for("items:delete-item-by-id", id=test_item.id))
+        res = await authorized_client.delete(app.url_path_for("items:delete-item-by-id", item_id=test_item.id))
         assert res.status_code == HTTP_200_OK
         # ensure that the item no longer exists
         res = await authorized_client.get(
             app.url_path_for(
                 "items:get-item-by-id", 
-                id=test_item.id,
+                item_id=test_item.id,
             ),
         )
         assert res.status_code == HTTP_404_NOT_FOUND
@@ -300,13 +300,13 @@ class TestDeleteItem:
     async def test_wrong_id_returns_error(
         self, app:FastAPI, client:AsyncClient, id:int, status_code:int
     ) -> None:
-        res = await client.get(app.url_path_for("items:delete-item-by-id", id=id))
+        res = await client.get(app.url_path_for("items:delete-item-by-id", item_id=id))
         assert res.status_code == status_code
 
     async def test_item_cannot_be_deleted_if_not_logged_in(self, app:FastAPI, client: AsyncClient, test_item:ItemInDB)-> None:
-        res = await client.delete(app.url_path_for("items:delete-item-by-id", id=test_item.id))
+        res = await client.delete(app.url_path_for("items:delete-item-by-id", item_id=test_item.id))
         assert res.status_code == HTTP_401_UNAUTHORIZED
 
     async def test_authenticated_users_cannot_delete_items_for_other_users(self, app: FastAPI, authorized_client: AsyncClient, test_item2:ItemInDB) -> None:
-        res = await authorized_client.delete(app.url_path_for("items:delete-item-by-id", id=test_item2.id))
+        res = await authorized_client.delete(app.url_path_for("items:delete-item-by-id", item_id=test_item2.id))
         assert res.status_code == status.HTTP_403_FORBIDDEN

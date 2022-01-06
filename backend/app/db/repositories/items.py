@@ -1,12 +1,8 @@
 from fastapi.exceptions import HTTPException
-from starlette import status
 from starlette.status import HTTP_400_BAD_REQUEST
-from app.api.routes import items
-from app.db.metadata import Item, User
+from app.db.metadata import Item
 from app.db.repositories.base import BaseRepository
-from app.models import item
 from app.models.item import ItemCreate, ItemUpdate
-from app.models.user import UserInDB
 
 
 class ItemRepository(BaseRepository):

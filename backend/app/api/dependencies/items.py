@@ -7,10 +7,10 @@ from app.models.user import UserInDB
 from app.db.repositories.items import ItemRepository
 
 def get_item_by_id_from_path(
-    id: int = Path(..., ge=1),
+    item_id: int = Path(..., ge=1),
     item_repo: ItemRepository = Depends(get_repository(ItemRepository)),
 ) -> Item:
-    item = item_repo.get_item_by_id(id=id)
+    item = item_repo.get_item_by_id(id=item_id)
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="No item found with that id.",

@@ -16,12 +16,13 @@ from sqlalchemy.orm import close_all_sessions
 
 from app.core.config import DATABASE_URL, SECRET_KEY, JWT_TOKEN_PREFIX
 from app import settings
-
 settings.init()
 settings.db_url = f"{DATABASE_URL}_test"
 
+from app.db.repositories.offers import OffersRepository
+from app.models.offer import OfferCreate
 from app.services import auth_service
-from app.models.item import ItemCreate, Size, WhatDo
+from app.models.item import ItemCreate, ItemInDB, Size, WhatDo
 from app.db.repositories.products import ProductsRepository
 from app.db.repositories.users import UsersRepository
 from app.models.product import ProductCreate, ProductInDB, ProductType
@@ -183,3 +184,15 @@ def create_authorized_client(client: AsyncClient) -> Callable:
         return client
     return _create_authorized_client
 
+@pytest.fixture
+async def test_item_with_offers(db: session.Session, test_product: ProductInDB, test_user2: UserInDB, test_user_list: List[UserInDB]) -> ItemInDB:
+    item_repo = ItemRepository(db)
+    offers_repo = OffersRepository(db)
+    new_item = ItemCreate(product_id = test_product.id)
+    created_item = item_repo.create_item(item_create=new_item, user_id=test_user2.id) 
+    print(created_item.id)
+    for user in test_user_list:
+        offers_repo.create_offer_for_item(
+            new_offer=OfferCreate(item_id=created_item.id, user_id=user.id)
+        )
+    return ItemInDB.from_orm(created_item)

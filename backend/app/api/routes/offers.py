@@ -16,7 +16,13 @@ from app.models.user import UserInDB
 
 router = APIRouter()
 
-
+from app.api.dependencies.offers import (
+    check_offer_create_permissions,
+    check_offer_get_permissions,
+    check_offer_list_permissions,
+    get_offer_for_item_from_user_by_path,
+    list_offers_for_item_by_id_from_path,
+)
 
 
 @router.post(
@@ -36,16 +42,29 @@ async def create_offer(
 
 
 
-@router.get("/", response_model=List[OfferPublic], name="offers:list-offers-for-item")
-async def list_offers_for_item() -> List[OfferPublic]:
-    return None
+
+@router.get(
+    "/",
+    response_model=List[OfferPublic],
+    name="offers:list-offers-for-item",
+    dependencies=[Depends(check_offer_list_permissions)],
+)
+def list_offers_for_cleaning(
+    offers: List[OfferInDB] = Depends(list_offers_for_item_by_id_from_path)
+) -> List[OfferPublic]:
+    return offers
 
 
 
 
-@router.get("/{username}/", response_model=OfferPublic, name="offers:get-offer-from-user")
-async def get_offer_from_user(username: str = Path(..., min_length=3)) -> OfferPublic:
-    return None
+@router.get(
+    "/{username}/",
+    response_model=OfferPublic,
+    name="offers:get-offer-from-user",
+    dependencies=[Depends(check_offer_get_permissions)],
+)
+def get_offer_from_user(offer: OfferInDB = Depends(get_offer_for_item_from_user_by_path)) -> OfferPublic:
+    return offer
 
 
 

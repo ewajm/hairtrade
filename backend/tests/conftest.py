@@ -20,7 +20,7 @@ settings.init()
 settings.db_url = f"{DATABASE_URL}_test"
 
 from app.db.repositories.offers import OffersRepository
-from app.models.offer import OfferCreate
+from app.models.offer import OfferCreate, OfferUpdate
 from app.services import auth_service
 from app.models.item import ItemCreate, ItemInDB, Size, WhatDo
 from app.db.repositories.products import ProductsRepository
@@ -185,14 +185,33 @@ def create_authorized_client(client: AsyncClient) -> Callable:
     return _create_authorized_client
 
 @pytest.fixture
-async def test_item_with_offers(db: session.Session, test_product: ProductInDB, test_user2: UserInDB, test_user_list: List[UserInDB]) -> ItemInDB:
+def test_item_with_offers(db: session.Session, test_product: ProductInDB, test_user2: UserInDB, test_user_list: List[UserInDB]) -> ItemInDB:
     item_repo = ItemRepository(db)
     offers_repo = OffersRepository(db)
     new_item = ItemCreate(product_id = test_product.id)
     created_item = item_repo.create_item(item_create=new_item, user_id=test_user2.id) 
-    print(created_item.id)
     for user in test_user_list:
         offers_repo.create_offer_for_item(
             new_offer=OfferCreate(item_id=created_item.id, user_id=user.id)
         )
+    return ItemInDB.from_orm(created_item)
+
+@pytest.fixture
+def test_item_with_accepted_offer(
+    db: session.Session, test_product: ProductInDB, test_user2: UserInDB, test_user3: UserInDB, test_user_list: List[UserInDB]
+) -> ItemInDB:
+    item_repo = ItemRepository(db)
+    offers_repo = OffersRepository(db)
+    new_item = ItemCreate(product_id = test_product.id)
+    created_item = item_repo.create_item(item_create=new_item, user_id=test_user2.id) 
+    offers = []
+    for user in test_user_list:
+        offers.append(
+            offers_repo.create_offer_for_item(
+                new_offer=OfferCreate(item_id=created_item.id, user_id=user.id)
+            )
+        )
+    offers_repo.accept_offer(
+        offer=[o for o in offers if o.user_id == test_user3.id][0], offer_update=OfferUpdate(status="accepted")
+    )
     return ItemInDB.from_orm(created_item)

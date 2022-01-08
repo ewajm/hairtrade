@@ -1,6 +1,7 @@
 from typing import List
 from fastapi import HTTPException, Depends, status
 from app.api.dependencies.users import get_user_by_username_from_path
+from app.db.metadata import Offer
 from app.models.offer import OfferInDB
 
 from app.models.user import UserInDB
@@ -14,7 +15,7 @@ from app.api.dependencies.items import get_item_by_id_from_path
 
 def get_offer_for_item_from_user(
     *, user: UserInDB, item: ItemInDB, offers_repo: OffersRepository,
-) -> OfferInDB:
+) -> Offer:
     offer = offers_repo.get_offer_for_item_from_user(item=item, user=user)
     if not offer:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Offer not found.")
@@ -24,13 +25,21 @@ def get_offer_for_item_from_user_by_path(
     user: UserInDB = Depends(get_user_by_username_from_path),
     item: ItemInDB = Depends(get_item_by_id_from_path),
     offers_repo: OffersRepository = Depends(get_repository(OffersRepository)),
-) -> OfferInDB:
+) -> Offer:
     return get_offer_for_item_from_user(user=user, item=item, offers_repo=offers_repo)
+
+async def get_offer_for_item_from_current_user(
+    current_user: UserInDB = Depends(get_current_active_user),
+    item: ItemInDB = Depends(get_item_by_id_from_path),
+    offers_repo: OffersRepository = Depends(get_repository(OffersRepository)),
+) -> Offer:
+    return get_offer_for_item_from_user(user=current_user, item=item, offers_repo=offers_repo)
+
 
 def list_offers_for_item_by_id_from_path(
     item: ItemInDB = Depends(get_item_by_id_from_path),
     offers_repo: OffersRepository = Depends(get_repository(OffersRepository)),
-) -> List[OfferInDB]:
+) -> List[Offer]:
     return offers_repo.list_offers_for_item(item=item)
 
 def check_offer_create_permissions(
@@ -68,3 +77,34 @@ def check_offer_get_permissions(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Unable to access offer.",
         )        
+
+def check_offer_acceptance_permissions(
+    current_user: UserInDB = Depends(get_current_active_user),
+    item: ItemInDB = Depends(get_item_by_id_from_path),
+    offer: OfferInDB = Depends(get_offer_for_item_from_user_by_path),
+    existing_offers: List[OfferInDB] = Depends(list_offers_for_item_by_id_from_path)
+) -> None:
+    if item.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Only the owner of the item may accept offers."
+        )
+    if offer.status != "pending":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Can only accept offers that are currently pending."
+        )
+    if "accepted" in [o.status for o in existing_offers]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="That item job already has an accepted offer."
+        )
+
+def check_offer_cancel_permissions(offer: OfferInDB = Depends(get_offer_for_item_from_current_user)) -> None:
+    if offer.status != "accepted":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Can only cancel offers that have been accepted.",
+        )
+
+def check_offer_rescind_permissions(offer: OfferInDB = Depends(get_offer_for_item_from_current_user)) -> None:
+    if offer.status != "pending":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Can only rescind currently pending offers."
+        )

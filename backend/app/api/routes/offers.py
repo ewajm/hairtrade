@@ -5,8 +5,8 @@ from fastapi.exceptions import HTTPException
 from app.api.dependencies.auth import get_current_active_user
 from app.api.dependencies.database import get_repository
 from app.api.dependencies.items import get_item_by_id_from_path
-from app.api.dependencies.offers import check_offer_create_permissions
-from app.db.metadata import Item
+from app.api.dependencies.offers import check_offer_create_permissions, check_offer_rescind_permissions, get_offer_for_item_from_current_user
+from app.db.metadata import Item, Offer
 from app.db.repositories.offers import OffersRepository
 from app.models.item import ItemInDB
 
@@ -20,6 +20,8 @@ from app.api.dependencies.offers import (
     check_offer_create_permissions,
     check_offer_get_permissions,
     check_offer_list_permissions,
+    check_offer_acceptance_permissions,
+    check_offer_cancel_permissions,
     get_offer_for_item_from_user_by_path,
     list_offers_for_item_by_id_from_path,
 )
@@ -52,7 +54,7 @@ async def create_offer(
 def list_offers_for_cleaning(
     offers: List[OfferInDB] = Depends(list_offers_for_item_by_id_from_path)
 ) -> List[OfferPublic]:
-    return offers
+    return [OfferPublic.from_orm(l) for l in offers]
 
 
 
@@ -64,26 +66,48 @@ def list_offers_for_cleaning(
     dependencies=[Depends(check_offer_get_permissions)],
 )
 def get_offer_from_user(offer: OfferInDB = Depends(get_offer_for_item_from_user_by_path)) -> OfferPublic:
-    return offer
+    return OfferPublic.from_orm(offer)
 
 
 
 
-@router.put("/{username}/", response_model=OfferPublic, name="offers:accept-offer-from-user")
-async def accept_offer_from_user(username: str = Path(..., min_length=3)) -> OfferPublic:
-    return None
+@router.put(
+    "/{username}/",
+    response_model=OfferPublic,
+    name="offers:accept-offer-from-user",
+    dependencies=[Depends(check_offer_acceptance_permissions)],
+)
+async def accept_offer(
+    offer: Offer = Depends(get_offer_for_item_from_user_by_path),
+    offers_repo: OffersRepository = Depends(get_repository(OffersRepository)),
+) -> OfferPublic:
+    return OfferPublic.from_orm(offers_repo.accept_offer(offer=offer, offer_update=OfferUpdate(status="accepted")))
 
 
 
 
-@router.put("/", response_model=OfferPublic, name="offers:cancel-offer-from-user")
-async def cancel_offer_from_user() -> OfferPublic:
-    return None    
+@router.put(
+    "/",
+    response_model=OfferPublic,
+    name="offers:cancel-offer-from-user",
+    dependencies=[Depends(check_offer_cancel_permissions)],
+)
+async def cancel_offer(
+    offer: OfferInDB = Depends(get_offer_for_item_from_current_user),
+    offers_repo: OffersRepository = Depends(get_repository(OffersRepository)),
+) -> OfferPublic:
+    return OfferPublic.from_orm(offers_repo.cancel_offer(offer=offer, offer_update=OfferUpdate(status="cancelled"))) 
 
 
 
-
-@router.delete("/", response_model=int, name="offers:rescind-offer-from-user")
-async def rescind_offer_from_user() -> OfferPublic:
-    return None
-
+@router.delete(
+    "/",
+    response_model=OfferPublic,
+    name="offers:rescind-offer-from-user",
+    dependencies=[Depends(check_offer_rescind_permissions)],
+)
+async def rescind_offer(
+    offer: OfferInDB = Depends(get_offer_for_item_from_current_user),
+    offers_repo: OffersRepository = Depends(get_repository(OffersRepository)),
+) -> OfferPublic:
+    return OfferPublic.from_orm(offers_repo.rescind_offer(offer=offer))

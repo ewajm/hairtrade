@@ -32,7 +32,7 @@ class Product(BaseColumn, Base):
     brand = Column(Text, nullable=True)
     description = Column(Text, nullable=True)
     type = Column(Text, nullable=False, server_default="idk, a bottle")
-    users = relationship("Item", back_populates="product",
+    users = relationship("Trade", back_populates="product",
         cascade="all, delete",
         passive_deletes=True,)
 
@@ -50,17 +50,17 @@ class User(BaseColumn, Base):
         cascade="all, delete",
         passive_deletes=True,
     )
-    products = relationship("Item", back_populates="user",
+    products = relationship("Trade", back_populates="user",
         cascade="all, delete",
         passive_deletes=True,
     )
-    items = relationship("Offer", back_populates="user",
+    trades = relationship("Offer", back_populates="user",
         cascade="all, delete",
         passive_deletes=True,
     )
 
-class Item(BaseColumn, Base):
-    __tablename__='item'
+class Trade(BaseColumn, Base):
+    __tablename__='trade'
     id = Column(Integer, primary_key=True, index=True, unique=True, autoincrement=True)
     user_id=Column(ForeignKey('user.id'), primary_key=True)
     user = relationship("User", back_populates="products")
@@ -70,17 +70,17 @@ class Item(BaseColumn, Base):
     price = Column(Numeric(10,2), nullable=True) 
     comment = Column(Text,nullable=True)
     size = Column(Text,nullable=True)
-    user_offers = relationship("Offer", back_populates="item",
+    user_offers = relationship("Offer", back_populates="trade",
         cascade="all, delete",
         passive_deletes=True,
     )
 
 class Offer(TimestampColumn, Base):
     user_id=Column(ForeignKey('user.id', ondelete="CASCADE"), primary_key=True)
-    item_id = Column(ForeignKey('item.id', ondelete="CASCADE"), primary_key=True)
+    trade_id = Column(ForeignKey('trade.id', ondelete="CASCADE"), primary_key=True)
     status = Column(Text, nullable=False,server_default="pending", index=True)
-    user = relationship("User", back_populates="items")
-    item = relationship("Item", back_populates="user_offers")
+    user = relationship("User", back_populates="trades")
+    trade = relationship("Trade", back_populates="user_offers")
 
 
 

@@ -3,7 +3,7 @@ from enum import Enum
 
 from app.models.core import DateTimeModelMixin, CoreModel
 from app.models.user import UserPublic
-from app.models.item import ItemPublic
+from app.models.trade import TradePublic
 
 
 class OfferStatus(str, Enum):
@@ -15,13 +15,13 @@ class OfferStatus(str, Enum):
 
 class OfferBase(CoreModel):
     user_id: Optional[int]
-    item_id: Optional[int]
+    trade_id: Optional[int]
     status: Optional[OfferStatus] = OfferStatus.pending
 
 
 class OfferCreate(OfferBase):
     user_id: int
-    item_id: int
+    trade_id: int
 
 
 class OfferUpdate(CoreModel):
@@ -30,7 +30,7 @@ class OfferUpdate(CoreModel):
 
 class OfferInDB(DateTimeModelMixin, OfferBase):
     user_id: int
-    item_id: int
+    trade_id: int
 
     class Config:
         orm_mode = True
@@ -38,7 +38,7 @@ class OfferInDB(DateTimeModelMixin, OfferBase):
 
 class OfferPublic(OfferInDB):
     user: Optional[UserPublic]
-    cleaning: Optional[ItemPublic]
+    cleaning: Optional[TradePublic]
 
     class Config:
         orm_mode = True

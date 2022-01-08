@@ -22,15 +22,15 @@ settings.db_url = f"{DATABASE_URL}_test"
 from app.db.repositories.offers import OffersRepository
 from app.models.offer import OfferCreate, OfferUpdate
 from app.services import auth_service
-from app.models.item import ItemCreate, ItemInDB, Size, WhatDo
+from app.models.trade import TradeCreate, TradeInDB, Size, WhatDo
 from app.db.repositories.products import ProductsRepository
 from app.db.repositories.users import UsersRepository
 from app.models.product import ProductCreate, ProductInDB, ProductType
 from app.models.user import UserCreate, UserInDB
 from app.db.database import SessionLocal
 from app.db.database import engine
-from app.db.metadata import Item
-from app.db.repositories.items import ItemRepository
+from app.db.metadata import Trade
+from app.db.repositories.trades import TradeRepository
 
 
 # Apply migrations at beginning and end of testing session
@@ -132,24 +132,24 @@ def user_fixture_helper(*, db: session.Session, new_user: UserCreate) -> UserInD
     return user_repo.register_new_user(new_user=new_user)
 
 @pytest.fixture
-async def test_item(test_user:UserInDB, test_product:ProductInDB, db:session.Session):
-    new_item = ItemCreate(
+async def test_trade(test_user:UserInDB, test_product:ProductInDB, db:session.Session):
+    new_trade = TradeCreate(
         product_id = test_product.id,
         what_do = WhatDo.trade,
         comment = "didn't like smell",
         size = Size.travel
     )
-    existing_item = db.query(Item).filter(
-        Item.user_id == test_user.id, 
-        Item.product_id == test_product.id,
-        Item.what_do == "trade",
-        Item.comment == "didn't like smell",
-        Item.size == "travel",
+    existing_trade = db.query(Trade).filter(
+        Trade.user_id == test_user.id, 
+        Trade.product_id == test_product.id,
+        Trade.what_do == "trade",
+        Trade.comment == "didn't like smell",
+        Trade.size == "travel",
     ).first()
-    if existing_item:
-        return existing_item
-    item_repo = ItemRepository(db)
-    return item_repo.create_item(item_create= new_item, user_id=test_user.id)
+    if existing_trade:
+        return existing_trade
+    trade_repo = TradeRepository(db)
+    return trade_repo.create_trade(trade_create= new_trade, user_id=test_user.id)
 
 @pytest.fixture
 def test_user3(db: session.Session) -> UserInDB:
@@ -185,33 +185,33 @@ def create_authorized_client(client: AsyncClient) -> Callable:
     return _create_authorized_client
 
 @pytest.fixture
-def test_item_with_offers(db: session.Session, test_product: ProductInDB, test_user2: UserInDB, test_user_list: List[UserInDB]) -> ItemInDB:
-    item_repo = ItemRepository(db)
+def test_trade_with_offers(db: session.Session, test_product: ProductInDB, test_user2: UserInDB, test_user_list: List[UserInDB]) -> TradeInDB:
+    trade_repo = TradeRepository(db)
     offers_repo = OffersRepository(db)
-    new_item = ItemCreate(product_id = test_product.id)
-    created_item = item_repo.create_item(item_create=new_item, user_id=test_user2.id) 
+    new_trade = TradeCreate(product_id = test_product.id)
+    created_trade = trade_repo.create_trade(trade_create=new_trade, user_id=test_user2.id) 
     for user in test_user_list:
-        offers_repo.create_offer_for_item(
-            new_offer=OfferCreate(item_id=created_item.id, user_id=user.id)
+        offers_repo.create_offer_for_trade(
+            new_offer=OfferCreate(trade_id=created_trade.id, user_id=user.id)
         )
-    return ItemInDB.from_orm(created_item)
+    return TradeInDB.from_orm(created_trade)
 
 @pytest.fixture
-def test_item_with_accepted_offer(
+def test_trade_with_accepted_offer(
     db: session.Session, test_product: ProductInDB, test_user2: UserInDB, test_user3: UserInDB, test_user_list: List[UserInDB]
-) -> ItemInDB:
-    item_repo = ItemRepository(db)
+) -> TradeInDB:
+    trade_repo = TradeRepository(db)
     offers_repo = OffersRepository(db)
-    new_item = ItemCreate(product_id = test_product.id)
-    created_item = item_repo.create_item(item_create=new_item, user_id=test_user2.id) 
+    new_trade = TradeCreate(product_id = test_product.id)
+    created_trade = trade_repo.create_trade(trade_create=new_trade, user_id=test_user2.id) 
     offers = []
     for user in test_user_list:
         offers.append(
-            offers_repo.create_offer_for_item(
-                new_offer=OfferCreate(item_id=created_item.id, user_id=user.id)
+            offers_repo.create_offer_for_trade(
+                new_offer=OfferCreate(trade_id=created_trade.id, user_id=user.id)
             )
         )
     offers_repo.accept_offer(
         offer=[o for o in offers if o.user_id == test_user3.id][0], offer_update=OfferUpdate(status="accepted")
     )
-    return ItemInDB.from_orm(created_item)
+    return TradeInDB.from_orm(created_trade)

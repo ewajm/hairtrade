@@ -75,10 +75,10 @@ class UserInDB(IDModelMixin, DateTimeModelMixin, UserBase):
 class UserPublic(IDModelMixin, DateTimeModelMixin, UserBase):
     access_token: Optional[AccessToken]
     profile: Optional[ProfilePublic]
-    products: "Optional[List[ItemPublicByUser]]"
+    products: "Optional[List[TradePublicByUser]]"
 
     class Config:
         orm_mode = True
 
-from app.models.item import ItemPublicByUser
+from app.models.trade import TradePublicByUser
 UserPublic.update_forward_refs()

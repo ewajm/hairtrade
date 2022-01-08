@@ -15,41 +15,41 @@ class Size(str, Enum):
     regular = "regular"
     jumbo = "jumbo"
 
-class ItemBase(CoreModel):
+class TradeBase(CoreModel):
     size: Optional[Size] = "regular"
     comment: Optional[str]
     what_do: Optional[WhatDo] = "trade"
     price: Optional[float]
 
-class ItemCreate(ItemBase):
+class TradeCreate(TradeBase):
     product_id: int
     what_do:WhatDo = "trade"
 
-class ItemUpdate(ItemBase):
+class TradeUpdate(TradeBase):
     size: Optional[Size]
     what_do: Optional[WhatDo]
 
-class ItemInDB(DateTimeModelMixin, IDModelMixin, ItemBase):
+class TradeInDB(DateTimeModelMixin, IDModelMixin, TradeBase):
     user_id: int
     product_id: int
 
     class Config:
         orm_mode = True
 
-class ItemPublic(ItemInDB):
+class TradePublic(TradeInDB):
     product: "ProductInDB"
     user: "UserInDB"
 
     class Config:
         orm_mode = True
 
-class ItemPublicByUser(ItemInDB):
+class TradePublicByUser(TradeInDB):
     product: "ProductInDB"
 
     class Config:
         orm_mode = True
 
-class ItemPublicByProduct(ItemInDB):
+class TradePublicByProduct(TradeInDB):
     user: "UserInDB"
 
     class Config:
@@ -57,6 +57,6 @@ class ItemPublicByProduct(ItemInDB):
 
 from app.models.product import ProductInDB
 from app.models.user import UserInDB
-ItemPublicByUser.update_forward_refs()
-ItemPublicByProduct.update_forward_refs()
-ItemPublic.update_forward_refs()
+TradePublicByUser.update_forward_refs()
+TradePublicByProduct.update_forward_refs()
+TradePublic.update_forward_refs()

@@ -38,10 +38,10 @@ class ProductInDB(IDModelMixin,DateTimeModelMixin, ProductBase):
 
 class ProductPublic(ProductInDB):
     type: ProductType
-    instances: "Optional[List[ItemPublicByProduct]]"
+    instances: "Optional[List[TradePublicByProduct]]"
     
     class Config:
         orm_mod = True
 
-from app.models.item import ItemPublicByProduct
+from app.models.trade import TradePublicByProduct
 ProductPublic.update_forward_refs()

@@ -58,6 +58,9 @@ class User(BaseColumn, Base):
         cascade="all, delete",
         passive_deletes=True,
     )
+    evals = relationship("TradeEval", back_populates="reviewer",
+        passive_deletes=True,
+    )
 
 class Trade(BaseColumn, Base):
     __tablename__='trade'
@@ -74,6 +77,11 @@ class Trade(BaseColumn, Base):
         cascade="all, delete",
         passive_deletes=True,
     )
+    evals = relationship("TradeEval", back_populates="trade",
+        cascade="all, delete",
+        passive_deletes=True,
+    )
+    
 
 class Offer(TimestampColumn, Base):
     user_id=Column(ForeignKey('user.id', ondelete="CASCADE"), primary_key=True)
@@ -82,6 +90,17 @@ class Offer(TimestampColumn, Base):
     user = relationship("User", back_populates="trades")
     trade = relationship("Trade", back_populates="user_offers")
 
+class TradeEval(TimestampColumn, Base):
+    __tablename__='trade_evals'
+    trade_id = Column(ForeignKey('trade.id', ondelete='SET NULL'), nullable = False, index=True, primary_key=True)
+    trade = relationship("Trade", back_populates="evals")
+    reviewer_id = Column(ForeignKey('user.id', ondelete="SET NULL"), nullable=False,index=True, primary_key=True )
+    reviewer = relationship("User", back_populates="evals")
+    eval_type = Column(Text,nullable=False,server_default="recipient", index=True)
+    no_show = Column(Boolean, nullable=False, server_default="False")
+    responsiveness = Column(Integer, nullable=True)
+    demeanor = Column(Integer, nullable=True)
+    overall_rating = Column(Integer, nullable=False)
 
 
 #TODO add hair specific stuff like curl type, porosity etc. 

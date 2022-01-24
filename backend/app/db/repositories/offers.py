@@ -54,3 +54,8 @@ class OffersRepository(BaseRepository):
         self.db.delete(offer)
         self.db.commit()
         return offer
+
+    def mark_offer_completed(self, *, trade: TradeInDB, recipient: UserInDB) -> OfferInDB:
+        self.db.query(Offer).filter(Offer.trade_id == trade.id, Offer.user_id == recipient.id).\
+            update({Offer.status: "completed"}, synchronize_session=False)
+        self.db.commit()

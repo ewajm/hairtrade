@@ -7,17 +7,12 @@ from app.models.core import DateTimeModelMixin, CoreModel
 from app.models.user import UserPublic
 from app.models.trade import TradePublic
 
-class EvalType(str, Enum):
-    trader = "trader"
-    recipient = "recipient"
-
 
 class EvaluationBase(CoreModel):
     no_show: bool = False
     responsiveness: Optional[conint(ge=0, le=5)]
     demeanor: Optional[conint(ge=0, le=5)]
     overall_rating: Optional[conint(ge=0, le=5)]
-    eval_type: EvalType.recipient
 
 
 class EvaluationCreate(EvaluationBase):
@@ -29,13 +24,21 @@ class EvaluationUpdate(EvaluationBase):
 
 
 class EvaluationInDB(DateTimeModelMixin, EvaluationBase):
-    cleaner_id: int
-    cleaning_id: int
+    trader_id: int
+    trade_id: int
+    reviewer_id: int
+
+    class Config:
+        orm_mode = True
 
 
 class EvaluationPublic(EvaluationInDB):
     trade: Optional[TradePublic]
     reviewer: Optional[UserPublic]
+    trader: Optional[UserPublic]
+
+    class Config:
+        orm_mode = True
 
 class EvaluationAggregate(CoreModel):
     avg_responsiveness: confloat(ge=0, le=5)
@@ -50,4 +53,7 @@ class EvaluationAggregate(CoreModel):
     five_stars: conint(ge=0)
     total_evaluations: conint(ge=0)
     total_no_show: conint(ge=0)
+
+    class Config:
+        orm_mode = True
 

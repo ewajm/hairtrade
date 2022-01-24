@@ -58,7 +58,10 @@ class User(BaseColumn, Base):
         cascade="all, delete",
         passive_deletes=True,
     )
-    evals = relationship("TradeEval", back_populates="reviewer",
+    evals_done = relationship("TradeEval", foreign_keys='TradeEval.reviewer_id', back_populates="reviewer",
+        passive_deletes=True,
+    )
+    evals_received = relationship("TradeEval", foreign_keys='TradeEval.trader_id', back_populates="trader",
         passive_deletes=True,
     )
 
@@ -77,7 +80,8 @@ class Trade(BaseColumn, Base):
         cascade="all, delete",
         passive_deletes=True,
     )
-    evals = relationship("TradeEval", back_populates="trade",
+    eval = relationship("TradeEval", back_populates="trade",
+        uselist=False,
         cascade="all, delete",
         passive_deletes=True,
     )
@@ -93,10 +97,11 @@ class Offer(TimestampColumn, Base):
 class TradeEval(TimestampColumn, Base):
     __tablename__='trade_evals'
     trade_id = Column(ForeignKey('trade.id', ondelete='SET NULL'), nullable = False, index=True, primary_key=True)
-    trade = relationship("Trade", back_populates="evals")
+    trade = relationship("Trade", back_populates="eval")
+    trader_id = Column(ForeignKey('user.id', ondelete="SET NULL"), nullable=False,index=True, primary_key=True )
+    trader =  relationship("User", back_populates="evals_received", foreign_keys=[trader_id])
     reviewer_id = Column(ForeignKey('user.id', ondelete="SET NULL"), nullable=False,index=True, primary_key=True )
-    reviewer = relationship("User", back_populates="evals")
-    eval_type = Column(Text,nullable=False,server_default="recipient", index=True)
+    reviewer = relationship("User", back_populates="evals_done", foreign_keys=[reviewer_id])
     no_show = Column(Boolean, nullable=False, server_default="False")
     responsiveness = Column(Integer, nullable=True)
     demeanor = Column(Integer, nullable=True)

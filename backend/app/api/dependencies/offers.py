@@ -12,7 +12,7 @@ from app.api.dependencies.database import get_repository
 from app.api.dependencies.auth import get_current_active_user
 from app.api.dependencies.trades import get_trade_by_id_from_path
 
-
+#TODO: OFFERS THAT ARE TRADE NEED TO HAVE WHAT YOU ARE TRADING DUR
 def get_offer_for_trade_from_user(
     *, user: UserInDB, trade: TradeInDB, offers_repo: OffersRepository,
 ) -> Offer:

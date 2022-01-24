@@ -1,6 +1,8 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, Body, Path, status
+from app.api.dependencies.evaluations import check_evaluation_create_permissions
+from app.api.routes.users import get_currently_authenticated_user
 
 from app.models.evaluation import EvaluationCreate, EvaluationInDB, EvaluationPublic, EvaluationAggregate
 from app.models.user import UserInDB
@@ -21,11 +23,18 @@ router = APIRouter()
     response_model=EvaluationPublic,
     name="evaluations:create-evaluation-for-trade",
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(check_evaluation_create_permissions)]
 )
-async def create_evaluation_for_cleaner(
+def create_evaluation_for_trade(
     evaluation_create: EvaluationCreate = Body(..., embed=True),
+    trade: TradeInDB = Depends(get_trade_by_id_from_path),
+    trader: UserInDB = Depends(get_user_by_username_from_path),
+    reviewer: UserInDB = Depends(get_currently_authenticated_user),
+    evals_repo: EvaluationsRepository = Depends(get_repository(EvaluationsRepository)),    
 ) -> EvaluationPublic:
-    return None
+    return EvaluationPublic.from_orm(evals_repo.create_evaluation_for_trade(
+        evaluation_create=evaluation_create, trader=trader, trade=trade, reviewer = reviewer
+    ))
 
 @router.get(
     "/",

@@ -1,7 +1,7 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, Body, Path, status
-from app.api.dependencies.evaluations import check_evaluation_create_permissions
+from app.api.dependencies.evaluations import check_evaluation_create_permissions, get_trader_evaluation_for_trade_from_path, list_evaluations_for_trader_from_path
 from app.api.routes.users import get_currently_authenticated_user
 
 from app.models.evaluation import EvaluationCreate, EvaluationInDB, EvaluationPublic, EvaluationAggregate
@@ -39,22 +39,29 @@ def create_evaluation_for_trade(
 @router.get(
     "/",
     response_model=List[EvaluationPublic],
-    name="evaluations:list-evaluations-for-user",
+    name="evaluations:list-evaluations-for-trader",
 )
-async def list_evaluations_for_user() -> List[EvaluationPublic]:
-    return None
+def list_evaluations_for_trader(
+    evaluations: List[EvaluationInDB] = Depends(list_evaluations_for_trader_from_path)
+) -> List[EvaluationPublic]:
+    return [EvaluationPublic.from_orm(e) for e in evaluations]
 
 @router.get(
-    "/stats/", response_model=EvaluationAggregate, name="evaluations:get-stats-for-user",
+    "/stats/", response_model=EvaluationAggregate, name="evaluations:get-stats-for-trader",
 )
-async def get_stats_for_user() -> EvaluationAggregate:
-    return None 
+def get_stats_for_trader(
+    trader: UserInDB = Depends(get_user_by_username_from_path),
+    evals_repo: EvaluationsRepository = Depends(get_repository(EvaluationsRepository)),
+) -> EvaluationAggregate:
+    return EvaluationAggregate(**evals_repo.get_trader_aggregates(trader=trader))
 
 @router.get(
     "/{trade_id}/",
     response_model=EvaluationPublic,
-    name="evaluations:get-evaluation-for-user",
+    name="evaluations:get-evaluation-for-trade",
 )
-async def get_evaluation_for_user() -> EvaluationPublic:
-    return None
+def get_evaluation_for_trade(   
+    evaluation: EvaluationInDB = Depends(get_trader_evaluation_for_trade_from_path),
+) -> EvaluationPublic:
+    return EvaluationPublic.from_orm(evaluation)
 

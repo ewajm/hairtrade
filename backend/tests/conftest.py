@@ -1,3 +1,5 @@
+from itertools import product
+import random
 from typing import Callable, List
 import warnings
 import os
@@ -31,6 +33,8 @@ from app.db.database import SessionLocal
 from app.db.database import engine
 from app.db.metadata import Trade
 from app.db.repositories.trades import TradeRepository
+from app.db.repositories.evaluations import EvaluationsRepository
+from app.models.evaluation import EvaluationCreate
 
 
 # Apply migrations at beginning and end of testing session
@@ -215,3 +219,53 @@ def test_trade_with_accepted_offer(
         offer=[o for o in offers if o.user_id == test_user3.id][0], offer_update=OfferUpdate(status="accepted")
     )
     return TradeInDB.from_orm(created_trade)
+
+def create_trade_with_evaluated_offer_helper(
+    db: session.Session,
+    owner: UserInDB,
+    receiver: UserInDB,
+    product_create: ProductCreate,
+    evaluation_create: EvaluationCreate,
+) -> TradeInDB:
+    product_repo = ProductsRepository(db)
+    trade_repo = TradeRepository(db)
+    offers_repo = OffersRepository(db)
+    evals_repo = EvaluationsRepository(db)
+    existing_product = product_repo.get_product_by_name(name = product_create.product_name)
+    if existing_product:
+        return trade_repo.get_trades_by_product_id_and_user_id(product_id=existing_product.id, user_id=owner.id)[0]
+    created_product = product_repo.create_product(new_product=product_create)
+    trade_create = TradeCreate(size="regular", comment="didn't like", product_id = created_product.id)
+    created_trade = trade_repo.create_trade(trade_create=trade_create, user_id=owner.id)
+    offer = offers_repo.create_offer_for_trade(
+        new_offer=OfferCreate(trade_id=created_trade.id, user_id=receiver.id)
+    )
+    offers_repo.accept_offer(offer=offer, offer_update=OfferUpdate(status="accepted"))
+    evals_repo.create_evaluation_for_trade(
+        evaluation_create=evaluation_create, trade=created_trade, trader=owner, reviewer=receiver,
+    )
+    return created_trade
+
+@pytest.fixture
+def test_list_of_trades_with_evaluated_offer(
+    db: session.Session, test_user2: UserInDB, test_user3: UserInDB
+) -> List[TradeInDB]:
+    return [
+        create_trade_with_evaluated_offer_helper(
+            db=db,
+            owner=test_user2,
+            receiver=test_user3,
+            product_create=ProductCreate(
+                product_name=f"test product - {i}",
+                brand=f"test brand - {i}",
+                description=f"test description - {i}",
+                type=ProductType.dunno,
+            ),
+            evaluation_create=EvaluationCreate(
+                responsiveness=random.randint(0, 5),
+                demeanor=random.randint(0, 5),
+                overall_rating=random.randint(0, 5),
+            ),
+        )
+        for i in range(5)
+    ]

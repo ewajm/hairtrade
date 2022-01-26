@@ -16,7 +16,7 @@ from app.api.dependencies.trades import get_trade_by_id_from_path
 from app.api.dependencies.offers import get_offer_for_trade_from_current_user
 
 
-async def check_evaluation_create_permissions(
+def check_evaluation_create_permissions(
     current_user: UserInDB = Depends(get_current_active_user),
     trade: TradeInDB = Depends(get_trade_by_id_from_path),
     trader: UserInDB = Depends(get_user_by_username_from_path),
@@ -42,3 +42,18 @@ async def check_evaluation_create_permissions(
             detail="Cannot leave an evaluation for an unrelated user.",
         )
 
+def list_evaluations_for_trader_from_path(
+    trader: UserInDB = Depends(get_user_by_username_from_path),
+    evals_repo: EvaluationsRepository = Depends(get_repository(EvaluationsRepository)),
+) -> List[EvaluationInDB]:
+    return evals_repo.list_evaluations_for_trader(trader=trader)
+
+def get_trader_evaluation_for_trade_from_path(
+    trade: TradeInDB = Depends(get_trade_by_id_from_path),
+    trader: UserInDB = Depends(get_user_by_username_from_path),
+    evals_repo: EvaluationsRepository = Depends(get_repository(EvaluationsRepository)),
+) -> EvaluationInDB:
+    evaluation = evals_repo.get_trader_evaluation_for_trade(trade=trade, trader=trader)
+    if not evaluation:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No evaluation found for that trade.")
+    return evaluation

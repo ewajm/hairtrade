@@ -26,6 +26,7 @@ class ProductsRepository(BaseRepository):
 
     def create_product(self,new_product:ProductCreate):
         if self.get_product_by_name(name=new_product.product_name):
+            print("thing exists, leaving")
             return None
         db_product = Product(**new_product.dict())
         self.db.add(db_product)
